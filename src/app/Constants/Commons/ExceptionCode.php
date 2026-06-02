@@ -1,0 +1,197 @@
+<?php
+
+namespace App\Constants\Commons;
+
+class ExceptionCode
+{
+    // Common
+    const INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR';
+
+    const UNKNOWN_ERROR = 'UNKNOWN_ERROR';
+
+    const UNAUTHENTICATED = 'UNAUTHENTICATED';
+
+    const PERMISSION_DENIED = 'PERMISSION_DENIED';
+
+    const NOT_FOUND = 'NOT_FOUND';
+
+    const FORBIDDEN = 'FORBIDDEN';
+
+    // File
+    const INVALID_FILE = 'INVALID_FILE';
+
+    // Auth/Profile
+    const CURRENT_PASSWORD_NOT_MATCH = 'CURRENT_PASSWORD_NOT_MATCH';
+
+    const INVALID_TOKEN = 'INVALID_TOKEN';
+
+    const TOKEN_EXPIRED = 'TOKEN_EXPIRED';
+
+    const USER_NOT_FOUND = 'USER_NOT_FOUND';
+
+    const INVALID_CREDENTIALS = 'INVALID_CREDENTIALS';
+
+    const ACCOUNT_BLOCKED = 'ACCOUNT_BLOCKED';
+
+    const ACCOUNT_NOT_VERIFIED = 'ACCOUNT_NOT_VERIFIED';
+
+    const ROLE_ALREADY_ASSIGNED = 'ROLE_ALREADY_ASSIGNED';
+
+    const INVALID_ROLE = 'INVALID_ROLE';
+
+    const INVALID_OTP = 'INVALID_OTP';
+
+    const OTP_EXPIRED = 'OTP_EXPIRED';
+
+    const ACCOUNT_DISABLED = 'ACCOUNT_DISABLED';
+
+    const OTP_TOO_MANY_ATTEMPTS = 'OTP_003';
+
+    const OTP_INVALID_OR_EXPIRED = 'PWD_004';
+
+    const RATE_LIMIT_EXCEEDED = 'PWD_003';
+
+    // Worker
+    const ALREADY_SUBMITTED = 'ALREADY_SUBMITTED';
+
+    const INVALID_STATUS = 'INVALID_STATUS';
+
+    const WORKER_PROFILE_NOT_FOUND = 'WORKER_PROFILE_NOT_FOUND';
+
+    const WORKER_NOT_APPROVED = 'WRK_001';
+
+    // Quotation
+    // Quotation
+    const DUPLICATE_ENTRY = 'DUPLICATE_ENTRY';
+
+    // Review
+    const REVIEW_ALREADY_EXISTS = 'REVIEW_ALREADY_EXISTS';
+
+    const ITEM_NOT_FOUND = 'ITEM_NOT_FOUND';
+
+    // Withdrawal
+    const INSUFFICIENT_BALANCE = 'WDR_001';
+
+    const PENDING_WITHDRAWAL_EXISTS = 'WDR_002';
+
+    const NO_BANK_ACCOUNT = 'WDR_003';
+
+    // Bank Account
+    const DUPLICATE_BANK_ACCOUNT = 'BNK_001';
+
+    const BANK_ACCOUNT_NOT_FOUND = 'BNK_002';
+
+    const CANNOT_MODIFY_WITH_PENDING_WITHDRAWAL = 'BNK_003';
+
+    const MUST_HAVE_ONE_BANK_ACCOUNT = 'BNK_004';
+
+    // Job
+    const PROFILE_INCOMPLETE = 'JOB_001';
+
+    // Address
+    const MAX_ADDRESS_LIMIT = 'ADDR_001';
+
+    const CANNOT_DELETE_DEFAULT_ADDRESS = 'ADDR_002';
+
+    // Admin
+    const ADMIN_NOT_FOUND = 'ADMIN_NOT_FOUND';
+
+    const CANNOT_DEACTIVATE_SELF = 'CANNOT_DEACTIVATE_SELF';
+
+    const CANNOT_DELETE_SELF = 'CANNOT_DELETE_SELF';
+
+    // Role
+    const ROLE_NOT_FOUND = 'ROLE_NOT_FOUND';
+
+    const ROLE_SUPER_ADMIN_CANNOT_BE_MODIFIED = 'ROLE_SUPER_ADMIN_CANNOT_BE_MODIFIED';
+
+    const ROLE_SUPER_ADMIN_CANNOT_BE_DELETED = 'ROLE_SUPER_ADMIN_CANNOT_BE_DELETED';
+
+    const ROLE_IN_USE = 'ROLE_IN_USE';
+
+    // Service Category
+    const HAS_CHILDREN = 'HAS_CHILDREN';
+
+    const CATEGORY_IN_USE = 'CATEGORY_IN_USE';
+
+    const INVALID_PARENT = 'INVALID_PARENT';
+
+    const IMMUTABLE_FIELD = 'IMMUTABLE_FIELD';
+
+    const INVALID_REORDER_SCOPE = 'INVALID_REORDER_SCOPE';
+
+    const INCOMPLETE_REORDER_SET = 'INCOMPLETE_REORDER_SET';
+
+    // Chat
+    const CHAT_NOT_PARTICIPANT = 'CHAT_001';
+
+    const CHAT_CONVERSATION_NOT_FOUND = 'CHAT_002';
+
+    // Platform Fee
+    const INVALID_SCHEDULE_OVERLAP = 'FEE_001';
+
+    // Payment
+    const GATEWAY_ERROR = 'PAY_001';
+
+    const PAYMENT_METHOD_DISABLED = 'PAY_002';
+
+    const PAYMENT_METHOD_NOT_FOUND = 'PAY_003';
+
+    const PAYMENT_ALREADY_PAID = 'PAY_004';
+
+    const PAYMENT_NOT_FOUND = 'PAY_005';
+
+    // Discount / Voucher
+    const INVALID_VOUCHER = 'DIS_001';
+
+    const VOUCHER_EXPIRED = 'DIS_002';
+
+    const VOUCHER_LIMIT_REACHED = 'DIS_003';
+
+    const VOUCHER_MIN_ORDER_AMOUNT_NOT_MET = 'DIS_004';
+
+    const VOUCHER_USER_LIMIT_REACHED = 'DIS_005';
+
+    // Employee
+    const EMPLOYEE_NOT_FOUND = 'EMP_001';
+
+    const EMPLOYEE_EMAIL_ALREADY_EXISTS = 'EMP_002';
+
+    const EMPLOYEE_CANNOT_DELETE_SELF = 'EMP_003';
+
+    const EMPLOYEE_RELATIVE_NOT_FOUND = 'EMP_004';
+
+    const EMPLOYEE_PERMISSION_DENIED = 'EMP_005';
+
+    // Company & Department Master
+    const COMPANY_NOT_FOUND = 'COM_001';
+
+    const DEPARTMENT_NOT_FOUND = 'DEP_001';
+
+    // Timesheets & Leave Requests
+    const TIMESHEET_NOT_FOUND = 'TMS_001';
+
+    const TIMESHEET_ALREADY_EXISTS = 'TMS_002';
+
+    const LEAVE_REQUEST_NOT_FOUND = 'LVE_001';
+
+    const LEAVE_REQUEST_OVERLAP = 'LVE_002';
+
+    const LEAVE_REQUEST_INVALID_DATES = 'LVE_003';
+
+    const LEAVE_REQUEST_CANNOT_APPROVE = 'LVE_004';
+
+    // Contract
+    const CONTRACT_NOT_FOUND = 'CNT_001';
+
+    const CONTRACT_CODE_ALREADY_EXISTS = 'CNT_002';
+
+    const CONTRACT_OVERLAP = 'CNT_003';
+
+    // Document / EDM
+    const DOCUMENT_NOT_FOUND = 'DOC_001';
+
+    const DOCUMENT_INVALID_EXTENSION = 'DOC_002';
+
+    const DOCUMENT_SIZE_EXCEEDED = 'DOC_003';
+}

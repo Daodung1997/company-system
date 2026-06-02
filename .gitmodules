@@ -1,0 +1,3 @@
+[submodule "docs"]
+	path = docs
+	url = git@git.supenient.vn:viec-vat/viec-vat-docs.git

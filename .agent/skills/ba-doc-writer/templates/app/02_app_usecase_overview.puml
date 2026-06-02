@@ -1,0 +1,32 @@
+@startuml
+left to right direction
+
+actor "User" as U
+actor "Admin" as A
+actor "System" as S
+actor "External" as X
+
+rectangle "System: <APP_NAME>" {
+
+  package "Module: <MODULE_1>" {
+    usecase "UC-01: <name>" as UC01
+    usecase "UC-02: <name>" as UC02
+  }
+
+  package "Module: <MODULE_2>" {
+    usecase "UC-03: <name>" as UC03
+    usecase "UC-04: <name>" as UC04
+  }
+
+  ' include/extend examples:
+  ' UC02 ..> UC01 : <<include>>
+  ' UC04 ..> UC03 : <<extend>>
+}
+
+U --> UC01
+U --> UC02
+A --> UC03
+S --> UC04
+X --> UC04
+
+@enduml

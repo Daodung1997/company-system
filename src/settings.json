@@ -1,0 +1,20 @@
+{
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit",
+        "source.organizeImports": "explicit"
+    },
+    "intelephense.environment.phpVersion": "8.2.0",
+    "intelephense.files.maxSize": 5000000,
+    "intelephense.completion.fullyQualifyGlobalConstantsAndFunctions": true,
+    "intelephense.completion.insertUseDeclaration": true,
+    "intelephense.references.exclude": [
+        "**/vendor/**",
+        "**/storage/**",
+        "**/bootstrap/cache/**"
+    ],
+    "[php]": {
+        "editor.defaultFormatter": "junstyle.php-cs-fixer"
+    },
+    "php.validate.enable": true
+}

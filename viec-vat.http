@@ -1,0 +1,891 @@
+@baseUrl = http://localhost:8000/api
+
+### =========================================================================
+### 📦 0. MASTER DATA (COMMON)
+### =========================================================================
+
+### Get All Areas
+GET {{baseUrl}}/areas
+Accept: application/json
+
+### Get All Service Categories
+GET {{baseUrl}}/service-categories
+Accept: application/json
+
+
+### --- UPLOAD UTILITIES ---
+
+### Upload Single Image
+POST {{baseUrl}}/upload/image
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="image"; filename="test.jpg"
+Content-Type: image/jpeg
+
+< ./path/to/image.jpg
+--boundary--
+
+### Upload Multiple Images
+POST {{baseUrl}}/upload/images
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="images[]"; filename="img1.jpg"
+Content-Type: image/jpeg
+
+< ./path/to/img1.jpg
+--boundary
+Content-Disposition: form-data; name="images[]"; filename="img2.jpg"
+Content-Type: image/jpeg
+
+< ./path/to/img2.jpg
+--boundary--
+
+
+### =========================================================================
+### 🔐 1. AUTHENTICATION & TOKEN AUTO-EXTRACTION (SEEDER DATA)
+### =========================================================================
+
+# @name userLogin
+POST {{baseUrl}}/user/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "customer@viecvat.com",
+  "password": "password"
+}
+
+> {%
+    if (response.status === 200) {
+        client.global.set("customerToken", response.body.data.access_token);
+    }
+%}
+
+###
+
+# @name workerLogin
+POST {{baseUrl}}/user/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "worker@viecvat.com",
+  "password": "password"
+}
+
+> {%
+    if (response.status === 200) {
+        client.global.set("workerToken", response.body.data.access_token);
+    }
+%}
+
+###
+
+# @name adminLogin
+POST {{baseUrl}}/admin/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "admin@viecvat.com",
+  "password": "Password123!"
+}
+
+> {%
+    if (response.status === 200) {
+        client.global.set("adminToken", response.body.data.access_token);
+    }
+%}
+
+
+### =========================================================================
+### 👤 2. USER & AUTH COMMON
+### =========================================================================
+
+### Register User
+POST {{baseUrl}}/user/auth/register
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Người dùng mới",
+  "email": "newuser@example.com",
+  "password": "Password@123",
+  "password_confirmation": "Password@123"
+}
+
+### Verify Email
+POST {{baseUrl}}/user/auth/verify-email
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "newuser@example.com",
+  "otp": "123456"
+}
+
+### Resend Verification OTP
+POST {{baseUrl}}/user/auth/resend-verification-otp
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "newuser@example.com"
+}
+
+### Forgot Password
+POST {{baseUrl}}/user/auth/forgot-password
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "customer@viecvat.com"
+}
+
+### Reset Password
+POST {{baseUrl}}/user/auth/reset-password
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "customer@viecvat.com",
+  "otp": "123456",
+  "password": "NewPassword@123",
+  "password_confirmation": "NewPassword@123"
+}
+
+### Choose Role (After Login/Verify)
+POST {{baseUrl}}/user/auth/choose-role
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "role": "customer"
+}
+
+### Refresh Token
+POST {{baseUrl}}/user/auth/refresh-token
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Logout
+POST {{baseUrl}}/user/auth/logout
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Refresh Token (Admin)
+POST {{baseUrl}}/admin/auth/refresh-token
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Logout (Admin)
+POST {{baseUrl}}/admin/auth/logout
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+
+### --- ADDRESS MANAGEMENT ---
+
+### List My Addresses
+GET {{baseUrl}}/user/addresses
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Create New Address
+POST {{baseUrl}}/user/addresses
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Nhà riêng",
+  "phone": "0901234567",
+  "address": "123 Lê Lợi, Q1, HCM",
+  "latitude": 10.776,
+  "longitude": 106.701,
+  "is_default": true
+}
+
+### Update Address
+PUT {{baseUrl}}/user/addresses/1
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Văn phòng"
+}
+
+### Delete Address
+DELETE {{baseUrl}}/user/addresses/1
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+
+### =========================================================================
+### 🏠 3. CUSTOMER MODULE
+### =========================================================================
+
+### Get Customer Home (Stats/Summary)
+GET {{baseUrl}}/customer/home
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Get Profile
+GET {{baseUrl}}/customer/profile
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Update Profile
+PUT {{baseUrl}}/customer/profile
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Nguyen Van A",
+  "phone": "0901234567"
+}
+
+### Change Password
+PUT {{baseUrl}}/customer/profile/password
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "old_password": "password",
+  "password": "NewPassword@123",
+  "password_confirmation": "NewPassword@123"
+}
+
+### --- JOB MANAGEMENT (CUSTOMER) ---
+
+### List My Jobs (Filters: status, service_id, scheduled_date)
+GET {{baseUrl}}/customer/jobs?page=1&limit=10&filters[status]=pending&sorts[created_at]=desc&search[description]=máy lạnh
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Create New Job
+POST {{baseUrl}}/customer/jobs
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "service_id": 1,
+  "description": "Bồn cầu bị nghẹt nặng, cần xử lý gấp",
+  "area_id": 1,
+  "address": "123 Lê Lợi, Q1, HCM",
+  "latitude": 10.776,
+  "longitude": 106.701,
+  "scheduled_date": "2026-05-15",
+  "time_slot": "08:00-10:00"
+}
+
+### Get Job Detail
+GET {{baseUrl}}/customer/jobs/1
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### List Quotations for Job
+GET {{baseUrl}}/customer/jobs/1/quotations
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Accept Quotation
+POST {{baseUrl}}/customer/jobs/1/quotations/1/accept
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Reject Quotation
+POST {{baseUrl}}/customer/jobs/1/quotations/1/reject
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Cancel Job
+POST {{baseUrl}}/customer/jobs/1/cancel
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "reason": "Tôi không cần sửa nữa"
+}
+
+### Submit Complaint
+POST {{baseUrl}}/customer/jobs/1/complaint
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "reason": "Thợ làm hỏng đồ",
+  "description": "Thợ làm nứt bồn cầu khi đang sửa"
+}
+
+### Submit Review for Worker
+POST {{baseUrl}}/customer/jobs/1/review
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+Accept: application/json
+
+  "comment": "Thợ rất nhiệt tình và sạch sẽ"
+}
+
+### --- PAYMENT ---
+
+### List Payment Methods
+GET {{baseUrl}}/payment-methods
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Get Payment Info for Job
+GET {{baseUrl}}/customer/jobs/1/payment
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Create Payment
+POST {{baseUrl}}/customer/jobs/1/payment
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "payment_method_id": 1
+}
+
+### Confirm Payment
+POST {{baseUrl}}/customer/jobs/1/payment/confirm
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Pay by Cash
+POST {{baseUrl}}/customer/jobs/1/payment/cash
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Create Gateway Payment (VNPay/ZaloPay)
+POST {{baseUrl}}/customer/jobs/1/payment/gateway
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "gateway": "vnpay"
+}
+
+
+### --- WORKER PROFILE (PUBLIC) ---
+
+### Get Public Worker Profile
+GET {{baseUrl}}/customer/workers/2
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Get Public Worker Reviews
+GET {{baseUrl}}/public/workers/2/reviews
+Accept: application/json
+
+
+### =========================================================================
+### 🛠️ 4. WORKER MODULE
+### =========================================================================
+
+### Get Worker Home
+GET {{baseUrl}}/worker/home
+Authorization: Bearer {{workerToken}}
+Accept: application/json
+
+### Toggle Online/Offline Status
+POST {{baseUrl}}/worker/home/toggle-status
+Authorization: Bearer {{workerToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "is_online": true
+}
+
+### Get Worker Profile
+GET {{baseUrl}}/worker/profile
+Authorization: Bearer {{workerToken}}
+Accept: application/json
+
+### Update Worker Services
+PUT {{baseUrl}}/worker/profile/services
+Authorization: Bearer {{workerToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "service_ids": [1, 2, 5]
+}
+
+### Update Worker Areas
+PUT {{baseUrl}}/worker/profile/areas
+Authorization: Bearer {{workerToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "area_ids": [1, 2]
+}
+
+### Toggle Availability
+PUT {{baseUrl}}/worker/profile/availability
+Authorization: Bearer {{workerToken}}
+Accept: application/json
+
+### --- REGISTRATION ---
+
+### Submit Registration
+POST {{baseUrl}}/worker/registration
+Authorization: Bearer {{workerToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Thợ Điện Lạnh",
+  "phone": "0901234567",
+  "dob": "1990-01-01",
+  "id_card_number": "123456789",
+  "id_card_issue_date": "2015-01-01",
+  "permanent_address": "456 CMT8, Q3, HCM",
+  "selfie_id": 1,
+  "id_card_front_id": 2,
+  "id_card_back_id": 3,
+  "gender": "male",
+  "service_ids": [1, 2],
+  "experience_years": 5,
+  "skill_description": "Chuyên sửa máy lạnh, máy giặt các dòng inverter",
+  "area_ids": [1, 2]
+}
+
+### Check Registration Status
+GET {{baseUrl}}/worker/registration/status
+Authorization: Bearer {{workerToken}}
+Accept: application/json
+
+### Resubmit Registration
+PUT {{baseUrl}}/worker/registration
+Authorization: Bearer {{workerToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Thợ Điện Lạnh Updated"
+}
+
+### --- JOB MANAGEMENT (WORKER) ---
+
+### List Available Jobs (Broadcast - Filtered by Area/Service)
+GET {{baseUrl}}/worker/jobs/available?filters[service_ids][]=1&filters[area_ids][]=1
+Authorization: Bearer {{workerToken}}
+Accept: application/json
+
+### List My Jobs (Assigned/Quoted)
+### Filters: worker_list_tab (in_progress, completed), worker_job_type (quoted, assigned)
+GET {{baseUrl}}/worker/jobs?filters[worker_list_tab]=in_progress&filters[worker_job_type]=assigned
+Authorization: Bearer {{workerToken}}
+Accept: application/json
+
+### Submit Quotation
+POST {{baseUrl}}/worker/jobs/1/quotation
+Authorization: Bearer {{workerToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "price": 250000,
+  "estimated_duration": "2 giờ",
+  "note": "Tôi nhận xử lý ngay trong chiều nay"
+}
+
+### Start Job
+POST {{baseUrl}}/worker/jobs/1/start
+Authorization: Bearer {{workerToken}}
+Accept: application/json
+
+### Complete Job
+POST {{baseUrl}}/worker/jobs/1/complete
+Authorization: Bearer {{workerToken}}
+Accept: application/json
+
+### Reject Job
+POST {{baseUrl}}/worker/jobs/1/reject
+Authorization: Bearer {{workerToken}}
+Accept: application/json
+
+### Reply to Complaint
+POST {{baseUrl}}/worker/jobs/1/complaints/1/reply
+Authorization: Bearer {{workerToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "response": "Tôi đã quay lại hỗ trợ khách hàng xử lý xong"
+}
+
+
+### =========================================================================
+### 💰 5. WALLET & BANK ACCOUNTS (WORKER)
+### =========================================================================
+
+### Get Wallet Balance
+GET {{baseUrl}}/worker/wallet
+Authorization: Bearer {{workerToken}}
+Accept: application/json
+
+### List Wallet Transactions (Filtered by Type)
+GET {{baseUrl}}/worker/wallet/transactions?filters[type]=deposit
+Authorization: Bearer {{workerToken}}
+Accept: application/json
+
+### Create Bank Account
+POST {{baseUrl}}/worker/bank-accounts
+Authorization: Bearer {{workerToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "bank_name": "Vietcombank",
+  "account_number": "0011001234567",
+  "account_name": "NGUYEN VAN B",
+  "branch": "Chi nhanh HCM",
+  "is_default": true
+}
+
+### List Bank Accounts
+GET {{baseUrl}}/worker/bank-accounts
+Authorization: Bearer {{workerToken}}
+Accept: application/json
+
+### Update Bank Account
+PUT {{baseUrl}}/worker/bank-accounts/1
+Authorization: Bearer {{workerToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "bank_name": "Vietcombank Updated"
+}
+
+### Delete Bank Account
+DELETE {{baseUrl}}/worker/bank-accounts/1
+Authorization: Bearer {{workerToken}}
+Accept: application/json
+
+### Create Withdrawal Request
+POST {{baseUrl}}/worker/wallet/withdrawals
+Authorization: Bearer {{workerToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "amount": 500000,
+  "bank_account_id": 1
+}
+
+### List Withdrawals
+GET {{baseUrl}}/worker/wallet/withdrawals
+Authorization: Bearer {{workerToken}}
+Accept: application/json
+
+### Get Withdrawal Detail
+GET {{baseUrl}}/worker/wallet/withdrawals/1
+Authorization: Bearer {{workerToken}}
+Accept: application/json
+
+
+### --- REVIEWS ---
+
+### List My Reviews
+GET {{baseUrl}}/worker/reviews
+Authorization: Bearer {{workerToken}}
+Accept: application/json
+
+### Get Review Summary
+GET {{baseUrl}}/worker/reviews/summary
+Authorization: Bearer {{workerToken}}
+Accept: application/json
+
+
+### =========================================================================
+### 💬 6. CHAT & NOTIFICATIONS
+### =========================================================================
+
+### List Conversations
+GET {{baseUrl}}/user/chat/conversations?search[name]=Thợ
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Start Conversation
+POST {{baseUrl}}/user/chat/conversations/start
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "receiver_id": 2,
+  "job_id": 1
+}
+
+### Get Messages in Conversation
+GET {{baseUrl}}/user/chat/conversations/1/messages
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Send Message
+POST {{baseUrl}}/user/chat/conversations/1/messages
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "content": "Chào bạn, khi nào bạn có mặt?",
+  "type": "text"
+}
+
+### Upload Media in Chat
+POST {{baseUrl}}/user/chat/media
+Authorization: Bearer {{customerToken}}
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="image.jpg"
+Content-Type: image/jpeg
+
+< ./path/to/image.jpg
+--boundary--
+
+### Mark Conversation as Read
+PUT {{baseUrl}}/user/chat/conversations/1/read
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### --- NOTIFICATIONS ---
+
+### List Notifications
+GET {{baseUrl}}/user/notifications?filters[is_read]=false
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Mark Notification as Read
+PUT {{baseUrl}}/user/notifications/1/read
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Mark All as Read
+PUT {{baseUrl}}/user/notifications/read-all
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Register Device Token (FCM)
+POST {{baseUrl}}/user/notifications/device-token
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "token": "fcm_token_example_123",
+  "platform": "android"
+}
+
+
+### =========================================================================
+### 🛡️ 7. ADMIN MODULE
+### =========================================================================
+
+### List Admin Accounts (Filters: status, search)
+GET {{baseUrl}}/admin/admins?filters[status]=active&search[name]=Admin
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+Content-Type: application/json
+
+### Create New Admin
+POST {{baseUrl}}/admin/admins
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Moderator A",
+  "email": "mod_a@example.com",
+  "password": "Password123!",
+  "role_id": 2
+}
+
+### Get Admin Detail
+GET {{baseUrl}}/admin/admins/1
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Update Admin
+PUT {{baseUrl}}/admin/admins/1
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Moderator A Updated"
+}
+
+### Toggle Admin Status
+POST {{baseUrl}}/admin/admins/1/toggle-status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "status": "inactive"
+}
+
+### Delete Admin
+DELETE {{baseUrl}}/admin/admins/1
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### List Roles & Permissions
+GET {{baseUrl}}/admin/roles
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Get Role Detail
+GET {{baseUrl}}/admin/roles/1
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Create Role
+POST {{baseUrl}}/admin/roles
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Moderator",
+  "permissions": ["admins.view", "jobs.view"]
+}
+
+### Update Role
+PUT {{baseUrl}}/admin/roles/1
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Moderator Updated",
+  "permissions": ["admins.view", "jobs.view", "jobs.resolve"]
+}
+
+### Delete Role
+DELETE {{baseUrl}}/admin/roles/1
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Get All Permissions
+GET {{baseUrl}}/admin/permissions
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### --- CONFIGURATION ---
+
+### Get Job Assignment Config
+GET {{baseUrl}}/admin/config/job-assignment
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Update Job Assignment Config
+PUT {{baseUrl}}/admin/config/job-assignment
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "max_distance_km": 15,
+  "max_active_jobs_per_worker": 5
+}
+
+### --- JOB & FINANCE ---
+
+### List All Jobs (Admin View)
+GET {{baseUrl}}/admin/jobs?filters[status]=pending&search[code]=JOB
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Get Job Detail (Admin)
+GET {{baseUrl}}/admin/jobs/1
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### List Job Notes
+GET {{baseUrl}}/admin/jobs/1/notes
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Add Job Note
+POST {{baseUrl}}/admin/jobs/1/notes
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "note": "Đã gọi điện xác nhận với khách hàng"
+}
+
+### Resolve Complaint (Complete)
+POST {{baseUrl}}/admin/jobs/1/resolve/complete
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Resolve Complaint (Refund)
+POST {{baseUrl}}/admin/jobs/1/resolve/refund
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "amount": 100000
+}
+
+### List All Payments
+GET {{baseUrl}}/admin/finance/payments
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Get Payment Detail
+GET {{baseUrl}}/admin/finance/payments/1
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Refund Payment
+POST {{baseUrl}}/admin/finance/payments/1/refund
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### List All Withdrawals (Admin)
+GET {{baseUrl}}/admin/finance/withdrawals
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Get Withdrawal Detail (Admin)
+GET {{baseUrl}}/admin/finance/withdrawals/1
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Get Finance Statistics (Profit)
+GET {{baseUrl}}/admin/finance/statistics/profit?filters[start_date]=2026-01-01&filters[end_date]=2026-12-31
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+
+### =========================================================================
+### 🔗 8. WEBHOOKS
+### =========================================================================
+
+### VNPay IPN (Webhook)
+GET {{baseUrl}}/webhooks/payment/vnpay/ipn?vnp_Amount=1000000&vnp_BankCode=NCB&vnp_BankTranNo=VNP12345678&vnp_CardType=ATM&vnp_OrderInfo=Thanh+toan+don+hang+JOB001&vnp_PayDate=20260511140000&vnp_ResponseCode=00&vnp_TmnCode=VNPAY&vnp_TransactionNo=12345678&vnp_TransactionStatus=00&vnp_TxnRef=JOB001&vnp_SecureHash=abcdef123456
+Accept: application/json

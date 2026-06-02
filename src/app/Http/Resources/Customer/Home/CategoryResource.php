@@ -1,0 +1,18 @@
+<?php
+
+namespace App\Http\Resources\Customer\Home;
+
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class CategoryResource extends JsonResource
+{
+    public function toArray($request): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'icon' => $this->icon,
+            'sub_categories' => SubCategoryResource::collection($this->whenLoaded('children')),
+        ];
+    }
+}

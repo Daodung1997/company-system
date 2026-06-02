@@ -1,0 +1,116 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+
+class CompanyEmployeeSeeder extends Seeder
+{
+    public function run(): void
+    {
+        // Clean existing records to prevent unique constraints duplicate error
+        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        DB::table('departments')->truncate();
+        DB::table('job_titles')->truncate();
+        DB::table('employees')->truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+
+        // 1. Seed Departments
+        $itDepId = DB::table('departments')->insertGetId([
+            'code' => 'DEP00001',
+            'name' => 'Phòng Công nghệ Thông tin (IT)',
+            'description' => 'Chịu trách nhiệm phát triển phần mềm và an toàn thông tin.',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $hrDepId = DB::table('departments')->insertGetId([
+            'code' => 'DEP00002',
+            'name' => 'Phòng Hành chính Nhân sự (HR)',
+            'description' => 'Quản lý nhân lực, phúc lợi và tuân thủ nội bộ.',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // 2. Seed Job Titles (Chức vụ phòng ban)
+        // IT department job titles
+        $itManagerTitleId = DB::table('job_titles')->insertGetId([
+            'code' => 'JOB00001',
+            'department_id' => $itDepId,
+            'name' => 'Trưởng phòng IT',
+            'description' => 'Quản lý toàn bộ hạ tầng kỹ thuật và dự án phần mềm.',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $itSeniorTitleId = DB::table('job_titles')->insertGetId([
+            'code' => 'JOB00002',
+            'department_id' => $itDepId,
+            'name' => 'Kỹ sư phần mềm Senior',
+            'description' => 'Phát triển các hệ thống cốt lõi và hướng dẫn Junior.',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // HR department job titles
+        $hrManagerTitleId = DB::table('job_titles')->insertGetId([
+            'code' => 'JOB00003',
+            'department_id' => $hrDepId,
+            'name' => 'Trưởng phòng HR',
+            'description' => 'Quản trị nhân sự và hoạch định chiến lược tuyển dụng.',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $hrStaffTitleId = DB::table('job_titles')->insertGetId([
+            'code' => 'JOB00004',
+            'department_id' => $hrDepId,
+            'name' => 'Chuyên viên tuyển dụng',
+            'description' => 'Tìm kiếm ứng viên và thực hiện các thủ tục tiếp nhận.',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // 3. Seed Employee (Admin Account for login)
+        DB::table('employees')->insert([
+            'department_id' => $itDepId,
+            'job_title_id' => $itManagerTitleId,
+            'code' => 'EMP00001',
+            'full_name' => 'Nguyễn Văn Quản Trị',
+            'full_name_kana' => 'グエン・ヴァン・クアン・チ',
+            'romaji_name' => 'Nguyen Van Quan Tri',
+            'email' => 'admin@compliance.vn',
+            'phone' => '0987654321',
+            'password' => Hash::make('P@ssw0rd123'),
+            'identity_type' => 'CCCD',
+            'identity_number' => '001095001234',
+            'role' => 'ADMIN',
+            'status' => 'ACTIVE',
+            'join_date' => '2025-01-01',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // 4. Seed another Employee (Manager Account for login by phone)
+        DB::table('employees')->insert([
+            'department_id' => $hrDepId,
+            'job_title_id' => $hrManagerTitleId,
+            'code' => 'EMP00002',
+            'full_name' => 'Trần Thị Nhân Sự',
+            'full_name_kana' => 'チャン・ティ・ニャン・ス',
+            'romaji_name' => 'Tran Thi Nhan Su',
+            'email' => 'manager@compliance.vn',
+            'phone' => '0912345678',
+            'password' => Hash::make('P@ssw0rd123'),
+            'identity_type' => 'ZAIRYU_CARD',
+            'identity_number' => 'AB1234567',
+            'role' => 'MANAGER',
+            'status' => 'ACTIVE',
+            'join_date' => '2025-02-15',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+}
