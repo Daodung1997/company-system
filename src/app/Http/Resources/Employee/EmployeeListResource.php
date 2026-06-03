@@ -14,6 +14,8 @@ class EmployeeListResource extends JsonResource
             'code' => $this->code,
             'full_name' => $this->full_name,
             'full_name_kana' => $this->full_name_kana,
+            'date_of_birth' => $this->date_of_birth?->format('Y-m-d'),
+            'gender' => $this->gender,
             'email' => $this->email,
             'phone' => $this->phone,
             'role' => $this->role,

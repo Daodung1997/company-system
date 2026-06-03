@@ -23,6 +23,13 @@ class Employee extends BaseAuthenticateModel implements JWTSubject
         'full_name',
         'full_name_kana',
         'romaji_name',
+        'date_of_birth',
+        'gender',
+        'hometown',
+        'place_of_birth',
+        'nationality',
+        'ethnicity',
+        'religion',
         'email',
         'phone',
         'password',
@@ -59,6 +66,7 @@ class Employee extends BaseAuthenticateModel implements JWTSubject
         return [
             'password' => 'hashed',
             'zairyu_card_expiry' => 'date',
+            'date_of_birth' => 'date',
             'join_date' => 'date',
             'must_change_password' => 'boolean',
         ];

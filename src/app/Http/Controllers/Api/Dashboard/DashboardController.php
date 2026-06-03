@@ -195,6 +195,66 @@ class DashboardController extends Controller
             ->toArray();
 
         // ====================================================================
+        // 9. GENDER DISTRIBUTION
+        // ====================================================================
+        $genderDistribution = DB::table('employees')
+            ->select('gender as label', DB::raw('COUNT(*) as value'))
+            ->groupBy('gender')
+            ->get()
+            ->map(function ($item) {
+                $lbl = match ($item->label) {
+                    'MALE' => 'Nam',
+                    'FEMALE' => 'Nữ',
+                    'OTHER' => 'Khác',
+                    default => 'Chưa cập nhật',
+                };
+                return [
+                    'label' => $lbl,
+                    'value' => $item->value,
+                ];
+            })
+            ->toArray();
+
+        // ====================================================================
+        // 10. AGE DISTRIBUTION
+        // ====================================================================
+        $employees = DB::table('employees')
+            ->select('date_of_birth')
+            ->whereNotNull('date_of_birth')
+            ->get();
+
+        $ageGroups = [
+            'Dưới 25' => 0,
+            '25 - 34' => 0,
+            '35 - 44' => 0,
+            '45 trở lên' => 0,
+            'Chưa cập nhật' => DB::table('employees')->whereNull('date_of_birth')->count(),
+        ];
+
+        foreach ($employees as $emp) {
+            $age = Carbon::parse($emp->date_of_birth)->age;
+            if ($age < 25) {
+                $ageGroups['Dưới 25']++;
+            } elseif ($age <= 34) {
+                $ageGroups['25 - 34']++;
+            } elseif ($age <= 44) {
+                $ageGroups['35 - 44']++;
+            } else {
+                $ageGroups['45 trở lên']++;
+            }
+        }
+
+        $ageDistribution = [];
+        foreach ($ageGroups as $lbl => $val) {
+            if ($val > 0) {
+                $ageDistribution[] = [
+                    'label' => $lbl,
+                    'value' => $val,
+                ];
+            }
+        }
+
+        // ====================================================================
         // ASSEMBLE RESPONSE
         // ====================================================================
         return Response::success([
@@ -220,6 +280,8 @@ class DashboardController extends Controller
             'compliance_by_type' => $complianceByType,
             'recent_transactions' => $recentTransactions,
             'department_distribution' => $departmentDistribution,
+            'gender_distribution' => $genderDistribution,
+            'age_distribution' => $ageDistribution,
         ]);
     }
 
