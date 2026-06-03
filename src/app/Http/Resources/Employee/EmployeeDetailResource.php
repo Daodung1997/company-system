@@ -99,6 +99,27 @@ class EmployeeDetailResource extends JsonResource
                     ];
                 });
             }),
+            'work_histories' => $this->whenLoaded('workHistories', function () {
+                return $this->workHistories->map(function ($history) {
+                    return [
+                        'id' => $history->id,
+                        'department_id' => $history->department_id,
+                        'job_title_id' => $history->job_title_id,
+                        'department' => $history->department ? [
+                            'id' => $history->department->id,
+                            'name' => $history->department->name,
+                        ] : null,
+                        'job_title' => $history->jobTitle ? [
+                            'id' => $history->jobTitle->id,
+                            'name' => $history->jobTitle->name,
+                        ] : null,
+                        'start_date' => $history->start_date?->format('Y-m-d'),
+                        'end_date' => $history->end_date?->format('Y-m-d'),
+                        'salary' => $history->salary,
+                        'note' => $history->note,
+                    ];
+                });
+            }),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

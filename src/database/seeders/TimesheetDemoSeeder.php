@@ -38,11 +38,8 @@ class TimesheetDemoSeeder extends Seeder
         DB::table('working_hour_configs')->insert([
             [
                 'name' => 'Cấu hình chuẩn năm 2026',
-                'start_date' => '2026-01-01',
-                'end_date' => '2026-12-31',
                 'start_time' => '08:30:00',
                 'end_time' => '17:30:00',
-                'saturday_mode' => 1, // Làm sáng thứ 7
                 'is_default' => 1,
                 'created_at' => now(),
                 'updated_at' => now(),

@@ -40,7 +40,13 @@ class TimesheetRepository extends Repository
      */
     public function getTimesheetsForAdmin(array $filters)
     {
-        $query = $this->model->with('employee');
+        $query = $this->model->with([
+            'employee.employeeShifts',
+            'employee.employeeShifts.workingHourConfig',
+            'employee.leaveRequests' => function ($sub) {
+                $sub->where('status', 'APPROVED');
+            }
+        ]);
 
         if (!empty($filters['q'])) {
             $q = $filters['q'];
@@ -62,39 +68,126 @@ class TimesheetRepository extends Repository
             $query->whereDate('date', '<=', $filters['end_date']);
         }
 
-        return $query->orderBy('date', 'desc')->paginate($filters['per_page'] ?? 15);
-    }
+        $paginator = $query->orderBy('date', 'desc')->paginate($filters['per_page'] ?? 15);
 
-    /**
-     * Get statistics for all employees for a given month.
-     */
-    public function getMonthlyStatistics(string $yearMonth)
-    {
         $configs = \App\Models\WorkingHourConfig::all();
-        
         $findActiveConfig = function ($dateStr) use ($configs) {
-            foreach ($configs as $config) {
-                if ($config->start_date && $config->end_date) {
-                    $startStr = $config->start_date instanceof \Carbon\Carbon ? $config->start_date->format('Y-m-d') : \Carbon\Carbon::parse($config->start_date)->format('Y-m-d');
-                    $endStr = $config->end_date instanceof \Carbon\Carbon ? $config->end_date->format('Y-m-d') : \Carbon\Carbon::parse($config->end_date)->format('Y-m-d');
-                    if ($dateStr >= $startStr && $dateStr <= $endStr) {
-                        return $config;
-                    }
-                }
-            }
             return $configs->where('is_default', true)->first() ?: (object)[
-                'start_time' => '09:00:00',
-                'end_time' => '18:00:00',
+                'start_time' => '08:30:00',
+                'end_time' => '17:30:00',
             ];
         };
 
         // Vietnam public holidays (MM-DD format)
         $publicHolidays = ['01-01', '04-30', '05-01', '09-02'];
 
-        return \App\Models\Employee::with(['timesheets' => function ($sub) use ($yearMonth) {
-            $sub->where('date', 'like', "{$yearMonth}%");
-        }])->get()->map(function ($employee) use ($findActiveConfig, $yearMonth, $publicHolidays) {
+        $paginator->getCollection()->transform(function ($timesheet) use ($findActiveConfig, $publicHolidays) {
+            $dateStr = $timesheet->date instanceof \Carbon\Carbon ? $timesheet->date->format('Y-m-d') : \Carbon\Carbon::parse($timesheet->date)->format('Y-m-d');
+            $dayOfWeek = (int) date('w', strtotime($dateStr));
+            $md = sprintf('%02d-%02d', (int)date('m', strtotime($dateStr)), (int)date('d', strtotime($dateStr)));
+
+            // Eager-loaded employee shifts
+            $empShifts = $timesheet->employee ? $timesheet->employee->employeeShifts : collect();
+            $empShift = $empShifts->first(function ($es) use ($dateStr) {
+                $esDate = $es->date instanceof \Carbon\Carbon ? $es->date->format('Y-m-d') : \Carbon\Carbon::parse($es->date)->format('Y-m-d');
+                return $esDate === $dateStr;
+            });
+
+            // Eager-loaded approved leave requests
+            $approvedLeaves = $timesheet->employee ? $timesheet->employee->leaveRequests : collect();
+            $dayLeave = $approvedLeaves->first(function ($leave) use ($dateStr) {
+                $startStr = $leave->start_date instanceof \Carbon\Carbon ? $leave->start_date->format('Y-m-d') : \Carbon\Carbon::parse($leave->start_date)->format('Y-m-d');
+                $endStr = $leave->end_date instanceof \Carbon\Carbon ? $leave->end_date->format('Y-m-d') : \Carbon\Carbon::parse($leave->end_date)->format('Y-m-d');
+                return $dateStr >= $startStr && $dateStr <= $endStr;
+            });
+
+            if ($empShift && $empShift->workingHourConfig) {
+                $expectedStart = $empShift->workingHourConfig->start_time;
+                $expectedEnd = $empShift->workingHourConfig->end_time;
+            } else {
+                if ($dayOfWeek === 0 || $dayOfWeek === 6 || in_array($md, $publicHolidays)) {
+                    $expectedStart = null;
+                    $expectedEnd = null;
+                } else {
+                    $cfg = $findActiveConfig($dateStr);
+                    $expectedStart = $cfg->start_time;
+                    $expectedEnd = $cfg->end_time;
+                }
+            }
+
+            if ($dayLeave) {
+                if ($dayLeave->leave_session === 'ALL') {
+                    $expectedStart = null;
+                    $expectedEnd = null;
+                } elseif ($dayLeave->leave_session === 'MORNING') {
+                    $expectedStart = '13:15:00';
+                } elseif ($dayLeave->leave_session === 'AFTERNOON') {
+                    $expectedEnd = '12:00:00';
+                }
+            }
+
+            // Calculate diff
+            $checkoutDiff = null;
+            if ($timesheet->check_out && $expectedEnd) {
+                $checkOutCarbon = \Carbon\Carbon::parse($timesheet->check_out);
+                // Extract only time from check_out and build a Carbon date on dateStr
+                $checkOutTime = $checkOutCarbon->format('H:i:s');
+                $checkOutOnDay = \Carbon\Carbon::parse($dateStr . ' ' . $checkOutTime);
+                $expectedEndCarbon = \Carbon\Carbon::parse($dateStr . ' ' . $expectedEnd);
+                
+                // Difference in minutes (positive means extra time worked, negative means left early)
+                $checkoutDiff = $expectedEndCarbon->diffInMinutes($checkOutOnDay, false);
+            }
+
+            $timesheet->expected_start = $expectedStart;
+            $timesheet->expected_end = $expectedEnd;
+            $timesheet->checkout_diff = $checkoutDiff;
+
+            return $timesheet;
+        });
+
+        return $paginator;
+    }
+
+    /**
+     * Get statistics for all employees for a given month.
+     */
+    public function getMonthlyStatistics(string $yearMonth, int $page = 1, int $perPage = 15, ?string $search = null)
+    {
+        $configs = \App\Models\WorkingHourConfig::all();
+        
+        $findActiveConfig = function ($dateStr) use ($configs) {
+            return $configs->where('is_default', true)->first() ?: (object)[
+                'start_time' => '08:30:00',
+                'end_time' => '17:30:00',
+            ];
+        };
+
+        // Vietnam public holidays (MM-DD format)
+        $publicHolidays = ['01-01', '04-30', '05-01', '09-02'];
+
+        $employeeQuery = \App\Models\Employee::with([
+            'timesheets' => function ($sub) use ($yearMonth) {
+                $sub->where('date', 'like', "{$yearMonth}%");
+            },
+            'employeeShifts' => function ($sub) use ($yearMonth) {
+                $sub->where('date', 'like', "{$yearMonth}%");
+            },
+            'employeeShifts.workingHourConfig'
+        ]);
+
+        if (!empty($search)) {
+            $employeeQuery->where(function ($q) use ($search) {
+                $q->where('full_name', 'like', "%{$search}%")
+                  ->orWhere('code', 'like', "%{$search}%");
+            });
+        }
+
+        $paginatedEmployees = $employeeQuery->paginate($perPage, ['*'], 'page', $page);
+
+        $mappedData = $paginatedEmployees->getCollection()->map(function ($employee) use ($findActiveConfig, $yearMonth, $publicHolidays) {
             $timesheets = $employee->timesheets;
+            $empShifts = $employee->employeeShifts;
             
             // Fetch approved leave requests for the employee in the selected month
             $approvedLeaves = \App\Models\LeaveRequest::where('employee_id', $employee->id)
@@ -105,188 +198,245 @@ class TimesheetRepository extends Repository
                 })
                 ->get();
 
-            $present = 0;
-            $late = 0;
-            $absent = 0;
+            $present = 0.0;
+            $late = 0.0;
+            $absent = 0.0;
             $totalLateHours = 0.0;
             $totalOvertimeHours = 0.0;
+            $overtimeHoursNormal = 0.0;
+            $overtimeHoursWeekend = 0.0;
+            $overtimeHoursHoliday = 0.0;
             $approvedLeaveDays = 0.0;
-            $unapprovedAbsentDays = 0;
+            $unapprovedAbsentDays = 0.0;
 
-            // Calculate max working days in the month (exclude weekends, holidays based on saturday_mode)
+            // Calculate dates in month
             $yearMonthParts = explode('-', $yearMonth);
             $year = (int) $yearMonthParts[0];
             $month = (int) $yearMonthParts[1];
             $daysInMonth = \Carbon\Carbon::createFromDate($year, $month, 1)->daysInMonth;
             $maxWorkingDays = 0;
 
+            $dailyTimesheetsMap = [];
+
             for ($day = 1; $day <= $daysInMonth; $day++) {
                 $dateStr = sprintf('%04d-%02d-%02d', $year, $month, $day);
                 $dayOfWeek = (int) date('w', strtotime($dateStr));
                 $md = sprintf('%02d-%02d', $month, $day);
 
-                // Skip public holidays
-                if (in_array($md, $publicHolidays)) {
-                    continue;
-                }
+                // Find if employee has a shift assigned on this date
+                $empShift = $empShifts->first(function ($es) use ($dateStr) {
+                    $esDate = $es->date instanceof \Carbon\Carbon ? $es->date->format('Y-m-d') : \Carbon\Carbon::parse($es->date)->format('Y-m-d');
+                    return $esDate === $dateStr;
+                });
 
-                // Skip Sundays
-                if ($dayOfWeek === 0) {
-                    continue;
-                }
-
-                // Handle Saturdays based on working hour config
-                if ($dayOfWeek === 6) {
-                    $cfg = $findActiveConfig($dateStr);
-                    $satMode = isset($cfg->saturday_mode) ? (int) $cfg->saturday_mode : 0;
-                    if ($satMode === 0) {
-                        continue; // Saturday off
-                    }
-                    // Saturday working (half or full) counts as a working day
-                }
-
-                $maxWorkingDays++;
-            }
-
-            // Calculate approved leave days for the month
-            foreach ($approvedLeaves as $leave) {
-                $leaveStart = $leave->start_date instanceof \Carbon\Carbon ? $leave->start_date : \Carbon\Carbon::parse($leave->start_date);
-                $leaveEnd = $leave->end_date instanceof \Carbon\Carbon ? $leave->end_date : \Carbon\Carbon::parse($leave->end_date);
-                $monthStart = \Carbon\Carbon::parse($yearMonth . '-01');
-                $monthEnd = $monthStart->copy()->endOfMonth();
-
-                // Clip leave range to the current month
-                $effectiveStart = $leaveStart->greaterThan($monthStart) ? $leaveStart : $monthStart;
-                $effectiveEnd = $leaveEnd->lessThan($monthEnd) ? $leaveEnd : $monthEnd;
-
-                if ($effectiveStart->greaterThan($effectiveEnd)) {
-                    continue;
-                }
-
-                // Count leave days within the month (only count working days)
-                $cursor = $effectiveStart->copy();
-                while ($cursor->lte($effectiveEnd)) {
-                    $cursorStr = $cursor->format('Y-m-d');
-                    $cursorDow = (int) $cursor->format('w');
-                    $cursorMd = $cursor->format('m-d');
-
-                    // Only count if it's a working day
+                $isWorkingDay = false;
+                if ($empShift) {
                     $isWorkingDay = true;
-                    if (in_array($cursorMd, $publicHolidays) || $cursorDow === 0) {
-                        $isWorkingDay = false;
-                    }
-                    if ($cursorDow === 6) {
-                        $cfg = $findActiveConfig($cursorStr);
-                        $satMode = isset($cfg->saturday_mode) ? (int) $cfg->saturday_mode : 0;
-                        if ($satMode === 0) {
-                            $isWorkingDay = false;
-                        }
-                    }
-
-                    if ($isWorkingDay) {
-                        if ($leave->leave_session === 'ALL') {
-                            $approvedLeaveDays += 1.0;
-                        } else {
-                            // MORNING or AFTERNOON = half day
-                            $approvedLeaveDays += 0.5;
-                        }
-                    }
-
-                    $cursor->addDay();
+                } elseif (!in_array($md, $publicHolidays) && $dayOfWeek !== 0 && $dayOfWeek !== 6) {
+                    $isWorkingDay = true;
                 }
-            }
 
-            foreach ($timesheets as $timesheet) {
-                $dateStr = $timesheet->date instanceof \Carbon\Carbon ? $timesheet->date->format('Y-m-d') : \Carbon\Carbon::parse($timesheet->date)->format('Y-m-d');
-                $cfg = $findActiveConfig($dateStr);
-                $dayOfWeek = (int) date('w', strtotime($dateStr));
+                if ($isWorkingDay) {
+                    $maxWorkingDays++;
+                }
 
-                // Check if employee has an approved leave request on this day
+                // Find timesheet record from DB if any
+                $t = $timesheets->first(function ($ts) use ($dateStr) {
+                    $tsDate = $ts->date instanceof \Carbon\Carbon ? $ts->date->format('Y-m-d') : \Carbon\Carbon::parse($ts->date)->format('Y-m-d');
+                    return $tsDate === $dateStr;
+                });
+
+                // Find approved leave request for daily return
                 $dayLeave = $approvedLeaves->first(function ($leave) use ($dateStr) {
                     $startStr = $leave->start_date instanceof \Carbon\Carbon ? $leave->start_date->format('Y-m-d') : \Carbon\Carbon::parse($leave->start_date)->format('Y-m-d');
                     $endStr = $leave->end_date instanceof \Carbon\Carbon ? $leave->end_date->format('Y-m-d') : \Carbon\Carbon::parse($leave->end_date)->format('Y-m-d');
                     return $dateStr >= $startStr && $dateStr <= $endStr;
                 });
 
-                if ($dayLeave && $dayLeave->leave_session === 'ALL') {
-                    // Excused full-day leave
-                    $present++;
-                    continue;
-                }
-
-                // Determine expected end time for OT calculation
-                $expectedEnd = $cfg->end_time ?? '17:30:00';
-                if ($dayOfWeek === 6) {
-                    $satMode = isset($cfg->saturday_mode) ? (int) $cfg->saturday_mode : 0;
-                    if ($satMode === 1) {
-                        $expectedEnd = '12:00:00';
-                    }
-                }
-                if ($dayLeave && $dayLeave->leave_session === 'AFTERNOON') {
-                    $expectedEnd = '12:00:00';
-                }
-
-                if ($timesheet->status === 'ABSENT') {
-                    // Count as unapproved absent only if there's no approved leave
-                    if (!$dayLeave) {
-                        $unapprovedAbsentDays++;
-                    }
-                    $absent++;
+                if ($empShift && $empShift->workingHourConfig) {
+                    $expectedStart = $empShift->workingHourConfig->start_time;
+                    $expectedEnd = $empShift->workingHourConfig->end_time;
+                    $shiftName = $empShift->workingHourConfig->name;
+                    $allowOvertime = $empShift->workingHourConfig->allow_overtime;
+                    $maxOvertimeHours = $empShift->workingHourConfig->max_overtime_hours;
                 } else {
-                    $isLate = false;
-                    $expectedStart = $cfg->start_time; // e.g. '08:30:00'
-                    
-                    if ($dayLeave) {
+                    $cfg = $findActiveConfig($dateStr);
+                    if ($dayOfWeek === 0 || $dayOfWeek === 6) {
+                        $expectedStart = null;
+                        $expectedEnd = null;
+                        $shiftName = null;
+                        $allowOvertime = false;
+                        $maxOvertimeHours = null;
+                    } else {
+                        $expectedStart = $cfg->start_time;
+                        $expectedEnd = $cfg->end_time;
+                        $shiftName = null;
+                        $allowOvertime = $cfg->allow_overtime;
+                        $maxOvertimeHours = $cfg->max_overtime_hours;
+                    }
+                }
+
+                if ($dayLeave) {
+                    if ($dayLeave->leave_session === 'ALL') {
+                        $approvedLeaveDays += 1.0;
+                    } else {
+                        $approvedLeaveDays += 0.5;
                         if ($dayLeave->leave_session === 'MORNING') {
                             $expectedStart = '13:15:00';
+                        } elseif ($dayLeave->leave_session === 'AFTERNOON') {
+                            $expectedEnd = '12:00:00';
                         }
-                    }
-
-                    if ($timesheet->check_in) {
-                        $checkInTime = \Carbon\Carbon::parse($timesheet->check_in)->format('H:i:s');
-                        if ($checkInTime > $expectedStart) {
-                            $isLate = true;
-                            
-                            $startCarbon = \Carbon\Carbon::parse($dateStr . ' ' . $expectedStart);
-                            $checkInCarbon = \Carbon\Carbon::parse($timesheet->check_in);
-                            $lateMinutes = $startCarbon->diffInMinutes($checkInCarbon, false);
-                            
-                            if ($lateMinutes > 0) {
-                                if ($lateMinutes < 5) {
-                                    $penaltyHours = 0.0;
-                                } elseif ($lateMinutes <= 30) {
-                                    $penaltyHours = 0.5;
-                                } elseif ($lateMinutes <= 60) {
-                                    $penaltyHours = 1.0;
-                                } else {
-                                    $penaltyHours = ceil($lateMinutes / 30.0) * 0.5;
-                                }
-                                $totalLateHours += $penaltyHours;
-                            }
-                        }
-                    }
-
-                    // Calculate overtime hours (check_out after expected_end)
-                    if ($timesheet->check_out) {
-                        $checkOutTime = \Carbon\Carbon::parse($timesheet->check_out)->format('H:i:s');
-                        if ($checkOutTime > $expectedEnd) {
-                            $checkOutCarbon = \Carbon\Carbon::parse($timesheet->check_out);
-                            $endCarbon = \Carbon\Carbon::parse($dateStr . ' ' . $expectedEnd);
-                            $overtimeMinutes = $endCarbon->diffInMinutes($checkOutCarbon, false);
-                            if ($overtimeMinutes > 0) {
-                                $totalOvertimeHours += round($overtimeMinutes / 60.0, 2);
-                            }
-                        }
-                    }
-
-                    if ($isLate || $timesheet->status === 'LATE') {
-                        $late++;
-                    } else {
-                        $present++;
                     }
                 }
+
+                // Daily metrics calculation
+                if ($isWorkingDay) {
+                    if ($dayLeave && $dayLeave->leave_session === 'ALL') {
+                        // Full day approved leave: no absent penalty, counted as present (excused)
+                        $present += 1.0;
+                    } elseif ($t) {
+                        if ($t->status === 'ABSENT') {
+                            $absent += ($dayLeave ? 0.5 : 1.0);
+                            if (!$dayLeave) {
+                                $unapprovedAbsentDays += 1.0;
+                            } else {
+                                $unapprovedAbsentDays += 0.5;
+                            }
+                        } else {
+                            $isLate = false;
+                            $dayWeight = $dayLeave ? 0.5 : 1.0;
+
+                            if ($t->check_in) {
+                                $checkInTime = \Carbon\Carbon::parse($t->check_in)->format('H:i:s');
+                                if ($expectedStart && $checkInTime > $expectedStart) {
+                                    $isLate = true;
+                                    $startCarbon = \Carbon\Carbon::parse($dateStr . ' ' . $expectedStart);
+                                    $checkInCarbon = \Carbon\Carbon::parse($t->check_in);
+                                    $lateMinutes = $startCarbon->diffInMinutes($checkInCarbon, false);
+                                    
+                                    if ($lateMinutes > 0) {
+                                        if ($lateMinutes < 5) {
+                                            $penaltyHours = 0.0;
+                                        } elseif ($lateMinutes <= 30) {
+                                            $penaltyHours = 0.5;
+                                        } elseif ($lateMinutes <= 60) {
+                                            $penaltyHours = 1.0;
+                                        } else {
+                                            $penaltyHours = ceil($lateMinutes / 30.0) * 0.5;
+                                        }
+                                        $totalLateHours += $penaltyHours;
+                                    }
+                                }
+                            }
+
+                            // Calculate overtime
+                            $dailyOt = 0.0;
+                            if ($t->check_out) {
+                                if ($expectedEnd) {
+                                    $checkOutTime = \Carbon\Carbon::parse($t->check_out)->format('H:i:s');
+                                    if ($checkOutTime > $expectedEnd) {
+                                        $checkOutCarbon = \Carbon\Carbon::parse($t->check_out);
+                                        $endCarbon = \Carbon\Carbon::parse($dateStr . ' ' . $expectedEnd);
+                                        $overtimeMinutes = $endCarbon->diffInMinutes($checkOutCarbon, false);
+                                        if ($overtimeMinutes > 0) {
+                                            $dailyOt = round($overtimeMinutes / 60.0, 2);
+                                            if (!$allowOvertime) {
+                                                $dailyOt = 0.0;
+                                            } else {
+                                                if (!is_null($maxOvertimeHours)) {
+                                                    $dailyOt = min($dailyOt, (double)$maxOvertimeHours);
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    // Weekend or holiday shift, if they checked in and out, count the whole duration
+                                    if ($t->check_in) {
+                                        $checkInCarbon = \Carbon\Carbon::parse($t->check_in);
+                                        $checkOutCarbon = \Carbon\Carbon::parse($t->check_out);
+                                        $overtimeMinutes = $checkInCarbon->diffInMinutes($checkOutCarbon, false);
+                                        if ($overtimeMinutes > 0) {
+                                            if ($overtimeMinutes > 240) {
+                                                $overtimeMinutes -= 60; // Lunch break
+                                            }
+                                            $dailyOt = round(max(0, $overtimeMinutes / 60.0), 2);
+                                        }
+                                    }
+                                }
+                            }
+
+                            if ($dailyOt > 0) {
+                                $isHoliday = in_array($md, $publicHolidays);
+                                $isWeekend = ($dayOfWeek === 0 || $dayOfWeek === 6);
+                                if ($isHoliday) {
+                                    $overtimeHoursHoliday += $dailyOt;
+                                } elseif ($isWeekend) {
+                                    $overtimeHoursWeekend += $dailyOt;
+                                } else {
+                                    $overtimeHoursNormal += $dailyOt;
+                                }
+                                $totalOvertimeHours += $dailyOt;
+                            }
+
+                            if ($isLate || $t->status === 'LATE') {
+                                $late += $dayWeight;
+                            } else {
+                                $present += $dayWeight;
+                            }
+                        }
+                    } else {
+                        // Missing check-in completely on working day
+                        if ($dayLeave) {
+                            $absent += 0.5;
+                            $unapprovedAbsentDays += 0.5;
+                        } else {
+                            $absent += 1.0;
+                            $unapprovedAbsentDays += 1.0;
+                        }
+                    }
+                } else {
+                    // Non-working day (Weekend or Holiday)
+                    if ($t && $t->status !== 'ABSENT') {
+                        $dailyOt = 0.0;
+                        if ($t->check_in && $t->check_out) {
+                            $checkInCarbon = \Carbon\Carbon::parse($t->check_in);
+                            $checkOutCarbon = \Carbon\Carbon::parse($t->check_out);
+                            $overtimeMinutes = $checkInCarbon->diffInMinutes($checkOutCarbon, false);
+                            if ($overtimeMinutes > 0) {
+                                if ($overtimeMinutes > 240) {
+                                    $overtimeMinutes -= 60; // Lunch break
+                                    if ($overtimeMinutes < 0) $overtimeMinutes = 0;
+                                }
+                                $dailyOt = round(max(0, $overtimeMinutes / 60.0), 2);
+                            }
+                        }
+
+                        if ($dailyOt > 0) {
+                            $isHoliday = in_array($md, $publicHolidays);
+                            if ($isHoliday) {
+                                $overtimeHoursHoliday += $dailyOt;
+                            } else {
+                                $overtimeHoursWeekend += $dailyOt;
+                            }
+                            $totalOvertimeHours += $dailyOt;
+                        }
+                    }
+                }
+
+                $dailyTimesheetsMap[] = [
+                    'date' => $dateStr,
+                    'check_in' => $t ? $t->check_in : null,
+                    'check_out' => $t ? $t->check_out : null,
+                    'status' => $t ? $t->status : ($isWorkingDay ? 'ABSENT' : 'PRESENT'),
+                    'expected_start' => $expectedStart,
+                    'expected_end' => $expectedEnd,
+                    'leave_session' => $dayLeave ? $dayLeave->leave_session : null,
+                    'shift_name' => $shiftName,
+                    'allow_overtime' => $allowOvertime,
+                    'max_overtime_hours' => $maxOvertimeHours,
+                ];
             }
-            
+
             return [
                 'employee_id' => $employee->id,
                 'employee_code' => $employee->code,
@@ -301,40 +451,14 @@ class TimesheetRepository extends Repository
                 'unapproved_absent_days' => $unapprovedAbsentDays,
                 'total_late_hours' => round($totalLateHours, 2),
                 'total_overtime_hours' => round($totalOvertimeHours, 2),
-                'timesheets' => $timesheets->map(function ($t) use ($findActiveConfig, $approvedLeaves) {
-                    $dateStr = $t->date instanceof \Carbon\Carbon ? $t->date->format('Y-m-d') : \Carbon\Carbon::parse($t->date)->format('Y-m-d');
-                    $cfg = $findActiveConfig($dateStr);
-
-                    // Find approved leave request for daily return
-                    $dayLeave = $approvedLeaves->first(function ($leave) use ($dateStr) {
-                        $startStr = $leave->start_date instanceof \Carbon\Carbon ? $leave->start_date->format('Y-m-d') : \Carbon\Carbon::parse($leave->start_date)->format('Y-m-d');
-                        $endStr = $leave->end_date instanceof \Carbon\Carbon ? $leave->end_date->format('Y-m-d') : \Carbon\Carbon::parse($leave->end_date)->format('Y-m-d');
-                        return $dateStr >= $startStr && $dateStr <= $endStr;
-                    });
-
-                    $expectedStart = $cfg->start_time;
-                    $expectedEnd = $cfg->end_time;
-                    
-                    if ($dayLeave) {
-                        if ($dayLeave->leave_session === 'MORNING') {
-                            $expectedStart = '13:15:00';
-                        } elseif ($dayLeave->leave_session === 'AFTERNOON') {
-                            $expectedEnd = '12:00:00';
-                        }
-                    }
-
-                    return [
-                        'date' => $dateStr,
-                        'check_in' => $t->check_in,
-                        'check_out' => $t->check_out,
-                        'status' => $t->status,
-                        'saturday_mode' => isset($cfg->saturday_mode) ? (int)$cfg->saturday_mode : 0,
-                        'expected_start' => $expectedStart,
-                        'expected_end' => $expectedEnd,
-                        'leave_session' => $dayLeave ? $dayLeave->leave_session : null,
-                    ];
-                })->toArray(),
+                'overtime_hours_normal' => round($overtimeHoursNormal, 2),
+                'overtime_hours_weekend' => round($overtimeHoursWeekend, 2),
+                'overtime_hours_holiday' => round($overtimeHoursHoliday, 2),
+                'timesheets' => $dailyTimesheetsMap,
             ];
         });
+
+        $paginatedEmployees->setCollection($mappedData);
+        return $paginatedEmployees;
     }
 }

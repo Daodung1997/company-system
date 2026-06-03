@@ -14,12 +14,11 @@ class WorkingHourConfig extends BaseModel
 
     protected $fillable = [
         'name',
-        'start_date',
-        'end_date',
         'start_time',
         'end_time',
         'is_default',
-        'saturday_mode',
+        'allow_overtime',
+        'max_overtime_hours',
         'created_by',
         'updated_by',
     ];
@@ -27,10 +26,9 @@ class WorkingHourConfig extends BaseModel
     protected function casts(): array
     {
         return [
-            'start_date' => 'date:Y-m-d',
-            'end_date' => 'date:Y-m-d',
             'is_default' => 'boolean',
-            'saturday_mode' => 'integer',
+            'allow_overtime' => 'boolean',
+            'max_overtime_hours' => 'double',
         ];
     }
 }

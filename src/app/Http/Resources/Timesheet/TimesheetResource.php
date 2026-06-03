@@ -19,6 +19,9 @@ class TimesheetResource extends JsonResource
             'status' => $this->status,
             'note' => $this->note,
             'employee' => new \App\Http\Resources\Api\Auth\EmployeeResource($this->whenLoaded('employee')),
+            'expected_start' => $this->expected_start ?? null,
+            'expected_end' => $this->expected_end ?? null,
+            'checkout_diff' => $this->checkout_diff ?? null,
             'created_at' => $this->created_at->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at->format('Y-m-d H:i:s'),
         ];

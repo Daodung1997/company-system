@@ -100,6 +100,35 @@ class ContractService extends AbstractService
         $data['created_by'] = $currentUser->full_name;
 
         $contract = $this->contractRepository->create($data);
+
+        // Auto generate and attach PDF document
+        try {
+            $renderedContract = $this->contractRepository->with(['employee'])->find($contract->id);
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.contract', ['contract' => $renderedContract, 'theme' => 'classic']);
+            $pdfContent = $pdf->output();
+
+            $fileName = 'Hop_dong_' . $contract->contract_code . '.pdf';
+            $encryptedName = time() . '_' . \Illuminate\Support\Str::random(16) . '.pdf';
+            $filePath = 'documents/' . $encryptedName;
+
+            \Illuminate\Support\Facades\Storage::disk('public')->put($filePath, $pdfContent);
+
+            \App\Models\Document::create([
+                'origin_name' => $fileName,
+                'file_path' => $filePath,
+                'disk' => 'public',
+                'extension' => 'pdf',
+                'filesize' => strlen($pdfContent),
+                'documentable_id' => $contract->id,
+                'documentable_type' => \App\Models\Contract::class,
+                'employee_id' => $contract->employee_id,
+                'contract_id' => $contract->id,
+                'status' => 'in_use',
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Failed to auto-generate contract PDF: ' . $e->getMessage());
+        }
+
         return $this->contractRepository->with(['employee', 'documents'])->find($contract->id);
     }
 

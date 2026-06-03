@@ -69,6 +69,13 @@ class StoreEmployeeRequest extends FormRequest
             'relatives.*.is_emergency_contact' => ['nullable', 'boolean'],
             'relatives.*.is_dependent' => ['nullable', 'boolean'],
             'relatives.*.notes' => ['nullable', 'string'],
+            'work_histories' => ['nullable', 'array'],
+            'work_histories.*.department_id' => ['required_with:work_histories', 'integer', 'exists:departments,id'],
+            'work_histories.*.job_title_id' => ['nullable', 'integer', 'exists:job_titles,id'],
+            'work_histories.*.start_date' => ['required_with:work_histories', 'date'],
+            'work_histories.*.end_date' => ['nullable', 'date', 'after_or_equal:work_histories.*.start_date'],
+            'work_histories.*.salary' => ['nullable', 'numeric', 'min:0'],
+            'work_histories.*.note' => ['nullable', 'string', 'max:500'],
         ];
     }
 

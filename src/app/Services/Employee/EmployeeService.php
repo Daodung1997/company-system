@@ -40,7 +40,7 @@ class EmployeeService extends AbstractService
     public function show(int $id)
     {
         $employee = $this->employeeRepository
-            ->with(['jobTitle', 'department', 'relatives', 'contracts.documents', 'documents'])
+            ->with(['jobTitle', 'department', 'relatives', 'contracts.documents', 'documents', 'workHistories.department', 'workHistories.jobTitle'])
             ->find($id);
 
         if (!$employee) {
@@ -61,6 +61,10 @@ class EmployeeService extends AbstractService
             $relativesData = $data['relatives'] ?? [];
             unset($data['relatives']);
 
+            // Extract work histories
+            $workHistoriesData = $data['work_histories'] ?? [];
+            unset($data['work_histories']);
+
             // Set default password and force password change on first login
             if (!isset($data['password']) || empty($data['password'])) {
                 $data['password'] = 'P@ssw0rd123';
@@ -79,7 +83,21 @@ class EmployeeService extends AbstractService
                 $this->syncDependentsCount($employee->id);
             }
 
-            $employee->load(['jobTitle', 'department', 'relatives']);
+            if (empty($workHistoriesData)) {
+                $employee->workHistories()->create([
+                    'department_id' => $employee->department_id,
+                    'job_title_id' => $employee->job_title_id,
+                    'start_date' => $employee->join_date,
+                    'salary' => null,
+                    'note' => 'Ngày làm việc đầu tiên',
+                ]);
+            } else {
+                foreach ($workHistoriesData as $historyItem) {
+                    $employee->workHistories()->create($historyItem);
+                }
+            }
+
+            $employee->load(['jobTitle', 'department', 'relatives', 'workHistories.department', 'workHistories.jobTitle']);
 
             $this->commitTransaction();
 
@@ -106,6 +124,10 @@ class EmployeeService extends AbstractService
             // Extract relatives
             $relativesData = $data['relatives'] ?? null;
             unset($data['relatives']);
+
+            // Extract work histories
+            $workHistoriesData = $data['work_histories'] ?? null;
+            unset($data['work_histories']);
 
             // Hash password if provided
             if (isset($data['password'])) {
@@ -141,8 +163,33 @@ class EmployeeService extends AbstractService
                 $this->syncDependentsCount($id);
             }
 
+            if ($workHistoriesData !== null) {
+                $keepHistoryIds = [];
+                foreach ($workHistoriesData as $historyItem) {
+                    if (isset($historyItem['id']) && !empty($historyItem['id'])) {
+                        // Update existing history item
+                        $employee->workHistories()->where('id', $historyItem['id'])->update([
+                            'department_id' => $historyItem['department_id'],
+                            'job_title_id' => $historyItem['job_title_id'],
+                            'start_date' => $historyItem['start_date'],
+                            'end_date' => $historyItem['end_date'] ?? null,
+                            'salary' => $historyItem['salary'] ?? null,
+                            'note' => $historyItem['note'] ?? null,
+                        ]);
+                        $keepHistoryIds[] = (int) $historyItem['id'];
+                    } else {
+                        // Create new history item
+                        $newHistory = $employee->workHistories()->create($historyItem);
+                        $keepHistoryIds[] = $newHistory->id;
+                    }
+                }
+
+                // Delete removed histories
+                $employee->workHistories()->whereNotIn('id', $keepHistoryIds)->delete();
+            }
+
             $employee = $this->employeeRepository
-                ->with(['jobTitle', 'department', 'relatives'])
+                ->with(['jobTitle', 'department', 'relatives', 'workHistories.department', 'workHistories.jobTitle'])
                 ->find($id);
 
             $this->commitTransaction();

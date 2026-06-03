@@ -12,12 +12,23 @@ Route::middleware(['auth:api'])->group(function () {
         Route::post('check-out', [TimesheetController::class, 'checkOut']);
         Route::get('manage', [TimesheetController::class, 'manage']);
         Route::get('statistics', [TimesheetController::class, 'statistics']);
+        Route::get('payroll', [TimesheetController::class, 'getPayroll']);
+        Route::get('payroll/export-excel', [TimesheetController::class, 'exportPayrollExcel']);
+        Route::get('payroll/export-pdf', [TimesheetController::class, 'exportPayrollPdf']);
+        Route::post('payroll', [TimesheetController::class, 'savePayroll']);
         Route::post('store-manual', [TimesheetController::class, 'storeManual']);
         
         // Working Hour Configurations
         Route::get('working-hour-configs', [TimesheetController::class, 'listWorkingHourConfigs']);
         Route::post('working-hour-configs', [TimesheetController::class, 'storeWorkingHourConfig']);
         Route::delete('working-hour-configs/{id}', [TimesheetController::class, 'deleteWorkingHourConfig']);
+
+        // Employee Shifts
+        Route::get('employee-shifts', [TimesheetController::class, 'listEmployeeShifts']);
+        Route::get('employee-shifts/calendar', [TimesheetController::class, 'listEmployeeShiftsCalendar']);
+        Route::post('employee-shifts', [TimesheetController::class, 'storeEmployeeShift']);
+        Route::post('employee-shifts/reset', [TimesheetController::class, 'resetEmployeeShifts']);
+        Route::delete('employee-shifts/{id}', [TimesheetController::class, 'deleteEmployeeShift']);
     });
 
     // Leave Requests

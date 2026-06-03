@@ -87,9 +87,19 @@ class Employee extends BaseAuthenticateModel implements JWTSubject
         return $this->hasMany(Timesheet::class, 'employee_id', 'id');
     }
 
+    public function employeeShifts()
+    {
+        return $this->hasMany(EmployeeShift::class, 'employee_id', 'id');
+    }
+
     public function relatives()
     {
         return $this->hasMany(EmployeeRelative::class, 'employee_id', 'id');
+    }
+
+    public function workHistories()
+    {
+        return $this->hasMany(EmployeeWorkHistory::class, 'employee_id', 'id')->orderBy('start_date', 'asc');
     }
 
     public function contracts()
@@ -105,6 +115,11 @@ class Employee extends BaseAuthenticateModel implements JWTSubject
     public function activeContract()
     {
         return $this->hasOne(Contract::class, 'employee_id', 'id')->where('status', 'ACTIVE');
+    }
+
+    public function leaveRequests()
+    {
+        return $this->hasMany(LeaveRequest::class, 'employee_id', 'id');
     }
 
     public function emergencyContacts()

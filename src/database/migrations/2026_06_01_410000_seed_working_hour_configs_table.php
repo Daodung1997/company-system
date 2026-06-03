@@ -10,8 +10,6 @@ return new class extends Migration
         DB::table('working_hour_configs')->insert([
             [
                 'name' => 'Hành chính Mặc định',
-                'start_date' => null,
-                'end_date' => null,
                 'start_time' => '08:30:00',
                 'end_time' => '17:30:00',
                 'is_default' => true,
@@ -20,8 +18,6 @@ return new class extends Migration
             ],
             [
                 'name' => 'Giai đoạn Kiểm toán Đầu năm',
-                'start_date' => '2026-01-01',
-                'end_date' => '2026-05-10',
                 'start_time' => '08:00:00',
                 'end_time' => '16:00:00',
                 'is_default' => false,
@@ -30,8 +26,6 @@ return new class extends Migration
             ],
             [
                 'name' => 'Giai đoạn Kiểm toán Giữa năm',
-                'start_date' => '2026-05-11',
-                'end_date' => '2026-06-30',
                 'start_time' => '08:30:00',
                 'end_time' => '16:30:00',
                 'is_default' => false,

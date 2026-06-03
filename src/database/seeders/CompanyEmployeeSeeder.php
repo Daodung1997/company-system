@@ -130,5 +130,60 @@ class CompanyEmployeeSeeder extends Seeder
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+
+        // 5. Seed 20 additional employees for testing
+        $firstNames = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Huỳnh', 'Phan', 'Vũ', 'Võ', 'Đặng', 'Bùi', 'Đỗ', 'Hồ', 'Ngô', 'Dương', 'Lý'];
+        $middleNames = ['Văn', 'Thị', 'Minh', 'Anh', 'Khánh', 'Đức', 'Hồng', 'Hoàng', 'Thanh', 'Ngọc', 'Tuấn', 'Quang'];
+        $lastNames = ['Sơn', 'Hải', 'Huy', 'Tùng', 'Nam', 'Trang', 'Vy', 'Linh', 'Hương', 'Hùng', 'Cường', 'Dũng', 'Phong', 'Bình', 'An', 'Khôi'];
+
+        for ($i = 3; $i <= 22; $i++) {
+            $code = sprintf('EMP%05d', $i);
+            $gender = $i % 2 === 0 ? 'FEMALE' : 'MALE';
+            
+            $fn = $firstNames[array_rand($firstNames)];
+            $mn = $middleNames[array_rand($middleNames)];
+            $ln = $lastNames[array_rand($lastNames)];
+            $fullName = "$fn $mn $ln";
+            
+            // Basic Romaji conversion
+            $cleanName = str_replace(
+                ['á','à','ả','ã','ạ','ă','ắ','ằ','ẳ','ẵ','ặ','â','ấ','ần','ẩ','ẫ','ậ','é','è','ẻ','ẽ','ẹ','ê','ế','ề','ể','ễ','ệ','í','ì','ỉ','ĩ','ị','ó','ò','ỏ','õ','ọ','ô','ố','ồ','ổ','ỗ','ộ','ơ','ớ','ờ','ở','ỡ','ợ','ú','ù','ủ','ũ','ụ','ư','ứ','ừ','ử','ữ','ự','ý','ỳ','ỷ','ỹ','ỵ','đ',' ', '’', '`'],
+                ['a','a','a','a','a','a','a','a','a','a','a','a','a','an','a','a','a','e','e','e','e','e','e','e','e','e','e','e','i','i','i','i','i','o','o','o','o','o','o','o','o','o','o','o','o','o','o','o','o','o','u','u','u','u','u','u','u','u','u','u','u','y','y','y','y','y','d',' ', '', ''],
+                mb_strtolower($fullName)
+            );
+            $romaji = ucwords($cleanName);
+
+            $isIT = $i % 2 === 1;
+            $depId = $isIT ? $itDepId : $hrDepId;
+            $titleId = $isIT ? $itSeniorTitleId : $hrStaffTitleId;
+
+            DB::table('employees')->insert([
+                'department_id' => $depId,
+                'job_title_id' => $titleId,
+                'code' => $code,
+                'full_name' => $fullName,
+                'full_name_kana' => 'テスト・ユーザー',
+                'romaji_name' => $romaji,
+                'date_of_birth' => sprintf('%04d-%02d-%02d', rand(1985, 2002), rand(1, 12), rand(1, 28)),
+                'gender' => $gender,
+                'hometown' => 'Hà Nội, Việt Nam',
+                'place_of_birth' => 'Hà Nội',
+                'nationality' => 'Việt Nam',
+                'ethnicity' => 'Kinh',
+                'religion' => 'Không',
+                'email' => strtolower(str_replace(' ', '', $romaji)) . "@compliance.vn",
+                'phone' => sprintf('09%08d', rand(10000000, 99999999)),
+                'password' => Hash::make('P@ssw0rd123'),
+                'identity_type' => 'CCCD',
+                'identity_number' => sprintf('00109%07d', rand(1000000, 9999999)),
+                'address_registered' => 'Địa chỉ đăng ký hộ khẩu thường trú của nhân viên ' . $code,
+                'address_current' => 'Địa chỉ tạm trú hiện tại của nhân viên ' . $code,
+                'role' => 'STAFF',
+                'status' => 'ACTIVE',
+                'join_date' => '2025-03-01',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
     }
 }
