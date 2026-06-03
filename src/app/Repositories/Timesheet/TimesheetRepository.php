@@ -117,7 +117,7 @@ class TimesheetRepository extends Repository
             $yearMonthParts = explode('-', $yearMonth);
             $year = (int) $yearMonthParts[0];
             $month = (int) $yearMonthParts[1];
-            $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+            $daysInMonth = \Carbon\Carbon::createFromDate($year, $month, 1)->daysInMonth;
             $maxWorkingDays = 0;
 
             for ($day = 1; $day <= $daysInMonth; $day++) {
