@@ -24,6 +24,16 @@ class DocumentResource extends JsonResource
             'transaction_id' => $this->transaction_id,
             'status' => $this->status,
             'url' => $this->url(),
+            'employee' => $this->relationLoaded('employee') && $this->employee ? [
+                'id' => $this->employee->id,
+                'full_name' => $this->employee->full_name,
+                'code' => $this->employee->code,
+            ] : null,
+            'contract' => $this->relationLoaded('contract') && $this->contract ? [
+                'id' => $this->contract->id,
+                'contract_code' => $this->contract->contract_code,
+                'type' => $this->contract->type,
+            ] : null,
             'created_by' => $this->created_by,
             'updated_by' => $this->updated_by,
             'created_at' => $this->created_at ? $this->created_at->toISOString() : null,

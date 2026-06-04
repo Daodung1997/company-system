@@ -327,22 +327,28 @@
     <table class="table-data">
         <tr>
             <td class="label" style="width: 160pt;">Tên doanh nghiệp:</td>
-            <td class="value"><strong>{{ $contract->company->name ?? 'Công ty Giải pháp Công nghệ Việt Nam' }}</strong></td>
+            <td class="value"><strong>{{ $contract->company_name ?? ($contract->company->name ?? 'Công ty Giải pháp Công nghệ Việt Nam') }}</strong></td>
         </tr>
-        @if(isset($contract->company))
         <tr>
             <td class="label">Mã số thuế doanh nghiệp:</td>
-            <td class="value" style="font-family: monospace; font-weight: bold;">{{ $contract->company->tax_code }}</td>
+            <td class="value" style="font-family: monospace; font-weight: bold;">{{ $contract->company_tax_code ?? ($contract->company->tax_code ?? '—') }}</td>
         </tr>
         <tr>
             <td class="label">Địa chỉ trụ sở chính:</td>
-            <td class="value">{{ $contract->company->address_registered }}</td>
+            <td class="value">{{ $contract->company_address ?? ($contract->company->address_registered ?? '—') }}</td>
         </tr>
         <tr>
             <td class="label">Người đại diện pháp luật:</td>
-            <td class="value">Ông/Bà <strong>{{ $contract->company->legal_representative }}</strong></td>
+            <td class="value">
+                @if($contract->company_representative)
+                    <strong>{{ $contract->company_representative }}</strong>@if($contract->company_representative_role) (Chức vụ: {{ $contract->company_representative_role }})@endif
+                @elseif(isset($contract->company) && $contract->company->legal_representative)
+                    Ông/Bà <strong>{{ $contract->company->legal_representative }}</strong>
+                @else
+                    —
+                @endif
+            </td>
         </tr>
-        @endif
     </table>
 
     <div style="margin-top: 10pt;"></div>
@@ -590,7 +596,7 @@
             <tr>
                 <td class="signature-cell">
                     <div class="signature-role">ĐẠI DIỆN BÊN A<br><span style="font-size: 8pt; font-weight: normal; font-style: italic;">(Ký tên, ghi rõ họ tên và đóng dấu pháp lý)</span></div>
-                    <div class="signature-name" style="margin-top: 50pt;">Ông/Bà: {{ $contract->company->legal_representative ?? 'Nguyễn Văn A' }}</div>
+                    <div class="signature-name" style="margin-top: 50pt;">Ông/Bà: {{ $contract->company_representative ?? 'Nguyễn Văn A' }}</div>
                 </td>
                 <td class="signature-cell">
                     <div class="signature-role">ĐẠI DIỆN BÊN B<br><span style="font-size: 8pt; font-weight: normal; font-style: italic;">(Ký tên và ghi rõ họ tên)</span></div>

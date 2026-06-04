@@ -30,6 +30,7 @@ require __DIR__.'/api/transaction.php';
 require __DIR__.'/api/compliance.php';
 require __DIR__.'/api/dashboard.php';
 require __DIR__.'/api/master.php';
+require __DIR__.'/api/notification.php';
 
 Route::prefix('customer')->group(function () {
     require __DIR__.'/api/customer/home.php';

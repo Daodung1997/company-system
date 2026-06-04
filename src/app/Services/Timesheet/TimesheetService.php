@@ -24,25 +24,18 @@ class TimesheetService extends AbstractService
 
     /**
      * Get the active working hour config for a specific date.
+     * Since working_hour_configs does not have date-range columns,
+     * we simply return the default config.
      */
     public function getActiveConfigForDate(string $date)
     {
-        $config = \App\Models\WorkingHourConfig::whereNotNull('start_date')
-            ->whereNotNull('end_date')
-            ->whereDate('start_date', '<=', $date)
-            ->whereDate('end_date', '>=', $date)
-            ->first();
-
-        if ($config) {
-            return $config;
-        }
-
         $defaultConfig = \App\Models\WorkingHourConfig::where('is_default', true)->first();
 
         if ($defaultConfig) {
             return $defaultConfig;
         }
 
+        // Fallback hardcoded config if none exists in the database
         return (object)[
             'start_time' => '09:00:00',
             'end_time' => '18:00:00',

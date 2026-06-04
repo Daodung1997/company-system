@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             TimesheetDemoSeeder::class,
             ContractSeeder::class,
             TransactionSeeder::class,
+            CompanySettingSeeder::class,
         ]);
     }
 }

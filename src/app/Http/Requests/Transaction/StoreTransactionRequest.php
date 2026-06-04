@@ -21,7 +21,7 @@ class StoreTransactionRequest extends FormRequest
             'amount' => 'required|numeric|min:0',
             'net_amount' => 'nullable|numeric|min:0',
             'tax_amount' => 'nullable|numeric|min:0',
-            'tax_rate_type' => 'nullable|string|in:VAT_8_VN,VAT_10_VN,NONE',
+            'tax_rate_type' => 'nullable|string|in:VAT_8_VN,VAT_10_VN,CT_8_JP,CT_10_JP,VAT_8,VAT_10,NONE',
             'invoice_registration_number' => [
                 'nullable',
                 'string',

@@ -6,6 +6,7 @@ use App\Constants\Commons\ExceptionCode;
 use App\Exceptions\BusinessException;
 use App\Repositories\Timesheet\LeaveRequestRepository;
 use App\Services\AbstractService;
+use App\Services\Notification\NotificationService;
 use Carbon\Carbon;
 
 class LeaveRequestService extends AbstractService
@@ -81,6 +82,27 @@ class LeaveRequestService extends AbstractService
             ]);
 
             $this->commitTransaction();
+
+            // Send notification to all managers about the new leave request
+            $employeeName = $leaveRequest->employee?->full_name ?? 'Nhân viên';
+            NotificationService::sendToRole(
+                'MANAGER',
+                'LEAVE_REQUEST_CREATED',
+                'Đơn xin nghỉ phép mới',
+                "{$employeeName} đã gửi đơn xin nghỉ phép từ {$startDate} đến {$endDate}.",
+                '/leave-request/pending',
+                ['leave_request_id' => $leaveRequest->id]
+            );
+            // Also notify ADMINs
+            NotificationService::sendToRole(
+                'ADMIN',
+                'LEAVE_REQUEST_CREATED',
+                'Đơn xin nghỉ phép mới',
+                "{$employeeName} đã gửi đơn xin nghỉ phép từ {$startDate} đến {$endDate}.",
+                '/leave-request/pending',
+                ['leave_request_id' => $leaveRequest->id]
+            );
+
             return $leaveRequest;
         } catch (\Throwable $e) {
             $this->rollbackTransaction();
@@ -120,7 +142,21 @@ class LeaveRequestService extends AbstractService
             ]);
 
             $this->commitTransaction();
-            return $request->refresh();
+
+            // Send notification back to the employee who submitted the leave request
+            $request->refresh();
+            $statusLabel = $data['status'] === 'APPROVED' ? 'được phê duyệt' : 'bị từ chối';
+            $managerName = $request->approver?->full_name ?? 'Quản lý';
+            NotificationService::send(
+                $request->employee_id,
+                'LEAVE_REQUEST_' . $data['status'],
+                "Đơn xin nghỉ phép đã {$statusLabel}",
+                "Đơn xin nghỉ phép của bạn từ {$request->start_date->format('Y-m-d')} đến {$request->end_date->format('Y-m-d')} đã {$statusLabel} bởi {$managerName}." . ($data['approver_note'] ? " Ghi chú: {$data['approver_note']}" : ''),
+                '/leave-request',
+                ['leave_request_id' => $request->id]
+            );
+
+            return $request;
         } catch (\Throwable $e) {
             $this->rollbackTransaction();
             throw $e;

@@ -65,6 +65,9 @@ class ComplianceService extends AbstractService
             'ot_scanned' => 0,
             'ot_issues_created' => 0,
             'resolved_count' => 0,
+            'employee_issues_created' => 0,
+            'expense_issues_created' => 0,
+            'revenue_issues_created' => 0,
         ];
 
         $this->beginTransaction();
@@ -72,11 +75,13 @@ class ComplianceService extends AbstractService
             $now = Carbon::now();
 
             // ----------------------------------------------------
-            // RULE 1: VISA EXPIRATION (ZAIRYU CARD EXPIRY)
+            // RULE 1: VISA EXPIRATION & EMPLOYEE COMPLIANCE
             // ----------------------------------------------------
             $employees = Employee::all();
             foreach ($employees as $employee) {
                 $results['visa_scanned']++;
+                
+                // A. Visa Expiration
                 if ($employee->zairyu_card_expiry) {
                     $expiry = Carbon::parse($employee->zairyu_card_expiry);
                     $daysLeft = $now->diffInDays($expiry, false);
@@ -101,10 +106,58 @@ class ComplianceService extends AbstractService
                         ]);
                         $results['visa_issues_created']++;
                     } else {
-                        // Visa is safe, self-heal existing issue
                         $resolved = $this->selfHealIssue('VISA_EXPIRATION', 'employee_id', $employee->id);
                         if ($resolved) $results['resolved_count']++;
                     }
+                }
+
+                // B. Thiếu hợp đồng lao động (Missing active LABOR contract)
+                $hasLaborContract = Contract::where('employee_id', $employee->id)
+                    ->where('type', 'LABOR')
+                    ->where('status', 'ACTIVE')
+                    ->exists();
+
+                if (!$hasLaborContract) {
+                    $this->createOrUpdateIssue([
+                        'employee_id' => $employee->id,
+                        'issue_type' => 'MISSING_LABOR_CONTRACT',
+                        'severity' => 'CRITICAL',
+                        'description' => "Nhân viên {$employee->full_name} ({$employee->code}) chưa có Hợp đồng lao động hoạt động (ACTIVE) trên hệ thống.",
+                    ]);
+                    $results['employee_issues_created']++;
+                } else {
+                    $resolved = $this->selfHealIssue('MISSING_LABOR_CONTRACT', 'employee_id', $employee->id);
+                    if ($resolved) $results['resolved_count']++;
+                }
+
+                // C. Thiếu CCCD (Missing CCCD / Identity)
+                $hasCccd = !empty($employee->identity_number);
+                if (!$hasCccd) {
+                    $this->createOrUpdateIssue([
+                        'employee_id' => $employee->id,
+                        'issue_type' => 'MISSING_CCCD',
+                        'severity' => 'WARNING',
+                        'description' => "Nhân viên {$employee->full_name} ({$employee->code}) thiếu thông tin số CCCD/Hộ chiếu trong hồ sơ.",
+                    ]);
+                    $results['employee_issues_created']++;
+                } else {
+                    $resolved = $this->selfHealIssue('MISSING_CCCD', 'employee_id', $employee->id);
+                    if ($resolved) $results['resolved_count']++;
+                }
+
+                // D. Thiếu mã số thuế (Missing Tax Code)
+                $hasTaxCode = !empty($employee->tax_code);
+                if (!$hasTaxCode) {
+                    $this->createOrUpdateIssue([
+                        'employee_id' => $employee->id,
+                        'issue_type' => 'MISSING_TAX_CODE',
+                        'severity' => 'WARNING',
+                        'description' => "Nhân viên {$employee->full_name} ({$employee->code}) thiếu thông tin Mã số thuế cá nhân.",
+                    ]);
+                    $results['employee_issues_created']++;
+                } else {
+                    $resolved = $this->selfHealIssue('MISSING_TAX_CODE', 'employee_id', $employee->id);
+                    if ($resolved) $results['resolved_count']++;
                 }
             }
 
@@ -139,7 +192,6 @@ class ComplianceService extends AbstractService
                         ]);
                         $results['contract_issues_created']++;
                     } else {
-                        // Contract is safe, self-heal
                         $resolved = $this->selfHealIssue('CONTRACT_EXPIRATION', 'contract_id', $contract->id);
                         if ($resolved) $results['resolved_count']++;
                     }
@@ -147,7 +199,7 @@ class ComplianceService extends AbstractService
             }
 
             // ----------------------------------------------------
-            // RULE 3: MISSING INVOICE / RECEIPT
+            // RULE 3: EXPENSE COMPLIANCE (CHI PHÍ)
             // ----------------------------------------------------
             $expenses = Transaction::where('type', 'EXPENSE')
                 ->with(['documents'])
@@ -155,35 +207,154 @@ class ComplianceService extends AbstractService
 
             foreach ($expenses as $expense) {
                 $results['invoice_scanned']++;
-                if ($expense->documents->isEmpty()) {
-                    $txnDate = Carbon::parse($expense->transaction_date);
-                    $daysOld = $now->diffInDays($txnDate);
+                $amountFormatted = number_format($expense->amount, 0, ',', '.') . ' ₫';
 
-                    $severity = 'WARNING';
-                    if ($daysOld > 7) {
-                        $severity = 'CRITICAL';
+                // Check 1: Thiếu invoice
+                $hasInvoice = false;
+                foreach ($expense->documents as $doc) {
+                    if (\Illuminate\Support\Str::contains(strtolower($doc->origin_name), ['invoice', 'hoá đơn', 'hoa don', 'bill', 'receipt'])) {
+                        $hasInvoice = true;
+                        break;
                     }
+                }
 
-                    $amountFormatted = number_format($expense->amount, 0, ',', '.') . ' ₫';
-                    $desc = "Khoản chi tiêu {$expense->code} trị giá {$amountFormatted} hạng mục {$expense->category} (Ngày chi: {$txnDate->format('Y-m-d')}) " . 
-                            ($daysOld > 7 ? "đã quá {$daysOld} ngày" : "hiện tại") . " thiếu chứng từ hóa đơn hoặc ủy nhiệm chi đính kèm.";
-
+                if (!$hasInvoice) {
                     $this->createOrUpdateIssue([
                         'transaction_id' => $expense->id,
                         'issue_type' => 'MISSING_INVOICE',
-                        'severity' => $severity,
-                        'description' => $desc,
+                        'severity' => 'CRITICAL',
+                        'description' => "Khoản chi tiêu {$expense->code} ({$amountFormatted}) hạng mục {$expense->category} thiếu hóa đơn (Invoice/Hoá đơn) đính kèm.",
                     ]);
-                    $results['invoice_issues_created']++;
+                    $results['expense_issues_created']++;
                 } else {
-                    // Document is now uploaded, self-heal!
                     $resolved = $this->selfHealIssue('MISSING_INVOICE', 'transaction_id', $expense->id);
+                    if ($resolved) $results['resolved_count']++;
+                }
+
+                // Check 2: Thiếu hợp đồng
+                $hasContract = false;
+                foreach ($expense->documents as $doc) {
+                    if ($doc->contract_id !== null || \Illuminate\Support\Str::contains(strtolower($doc->origin_name), ['contract', 'hợp đồng', 'hop dong', 'agreement'])) {
+                        $hasContract = true;
+                        break;
+                    }
+                }
+
+                if (!$hasContract) {
+                    $this->createOrUpdateIssue([
+                        'transaction_id' => $expense->id,
+                        'issue_type' => 'MISSING_CONTRACT',
+                        'severity' => 'WARNING',
+                        'description' => "Khoản chi tiêu {$expense->code} ({$amountFormatted}) hạng mục {$expense->category} thiếu Hợp đồng liên kết.",
+                    ]);
+                    $results['expense_issues_created']++;
+                } else {
+                    $resolved = $this->selfHealIssue('MISSING_CONTRACT', 'transaction_id', $expense->id);
+                    if ($resolved) $results['resolved_count']++;
+                }
+
+                // Check 3: Thiếu chứng từ thanh toán
+                $hasPaymentVoucher = false;
+                foreach ($expense->documents as $doc) {
+                    if (\Illuminate\Support\Str::contains(strtolower($doc->origin_name), ['payment', 'thanh toán', 'thanh toan', 'ủy nhiệm chi', 'uy nhiem chi', 'phiếu chi', 'phieu chi', 'voucher'])) {
+                        $hasPaymentVoucher = true;
+                        break;
+                    }
+                }
+
+                if (!$hasPaymentVoucher) {
+                    $this->createOrUpdateIssue([
+                        'transaction_id' => $expense->id,
+                        'issue_type' => 'MISSING_PAYMENT_VOUCHER',
+                        'severity' => 'WARNING',
+                        'description' => "Khoản chi tiêu {$expense->code} ({$amountFormatted}) hạng mục {$expense->category} thiếu Chứng từ thanh toán / Ủy nhiệm chi.",
+                    ]);
+                    $results['expense_issues_created']++;
+                } else {
+                    $resolved = $this->selfHealIssue('MISSING_PAYMENT_VOUCHER', 'transaction_id', $expense->id);
                     if ($resolved) $results['resolved_count']++;
                 }
             }
 
             // ----------------------------------------------------
-            // RULE 4: OVERTIME LIMIT (ARTICLE 36 VIOLATION)
+            // RULE 4: REVENUE COMPLIANCE (DOANH THU)
+            // ----------------------------------------------------
+            $revenues = Transaction::where('type', 'REVENUE')
+                ->with(['documents'])
+                ->get();
+
+            foreach ($revenues as $revenue) {
+                $amountFormatted = number_format($revenue->amount, 0, ',', '.') . ' ₫';
+
+                // Check 1: Thiếu PO (Purchase Order)
+                $hasPO = false;
+                foreach ($revenue->documents as $doc) {
+                    if (\Illuminate\Support\Str::contains(strtolower($doc->origin_name), ['po', 'purchase order', 'đơn đặt hàng', 'don dat hang', 'order'])) {
+                        $hasPO = true;
+                        break;
+                    }
+                }
+
+                if (!$hasPO) {
+                    $this->createOrUpdateIssue([
+                        'transaction_id' => $revenue->id,
+                        'issue_type' => 'MISSING_PO',
+                        'severity' => 'CRITICAL',
+                        'description' => "Khoản doanh thu {$revenue->code} ({$amountFormatted}) hạng mục {$revenue->category} thiếu Đơn đặt hàng (PO) đi kèm.",
+                    ]);
+                    $results['revenue_issues_created']++;
+                } else {
+                    $resolved = $this->selfHealIssue('MISSING_PO', 'transaction_id', $revenue->id);
+                    if ($resolved) $results['resolved_count']++;
+                }
+
+                // Check 2: Thiếu nghiệm thu
+                $hasAcceptance = false;
+                foreach ($revenue->documents as $doc) {
+                    if (\Illuminate\Support\Str::contains(strtolower($doc->origin_name), ['nghiệm thu', 'nghiem thu', 'acceptance', 'biên bản', 'bien ban'])) {
+                        $hasAcceptance = true;
+                        break;
+                    }
+                }
+
+                if (!$hasAcceptance) {
+                    $this->createOrUpdateIssue([
+                        'transaction_id' => $revenue->id,
+                        'issue_type' => 'MISSING_ACCEPTANCE',
+                        'severity' => 'CRITICAL',
+                        'description' => "Khoản doanh thu {$revenue->code} ({$amountFormatted}) hạng mục {$revenue->category} thiếu Biên bản nghiệm thu bàn giao.",
+                    ]);
+                    $results['revenue_issues_created']++;
+                } else {
+                    $resolved = $this->selfHealIssue('MISSING_ACCEPTANCE', 'transaction_id', $revenue->id);
+                    if ($resolved) $results['resolved_count']++;
+                }
+
+                // Check 3: Thiếu hợp đồng
+                $hasContract = false;
+                foreach ($revenue->documents as $doc) {
+                    if ($doc->contract_id !== null || \Illuminate\Support\Str::contains(strtolower($doc->origin_name), ['contract', 'hợp đồng', 'hop dong', 'agreement'])) {
+                        $hasContract = true;
+                        break;
+                    }
+                }
+
+                if (!$hasContract) {
+                    $this->createOrUpdateIssue([
+                        'transaction_id' => $revenue->id,
+                        'issue_type' => 'MISSING_CONTRACT',
+                        'severity' => 'WARNING',
+                        'description' => "Khoản doanh thu {$revenue->code} ({$amountFormatted}) hạng mục {$revenue->category} thiếu Hợp đồng liên kết.",
+                    ]);
+                    $results['revenue_issues_created']++;
+                } else {
+                    $resolved = $this->selfHealIssue('MISSING_CONTRACT', 'transaction_id', $revenue->id);
+                    if ($resolved) $results['resolved_count']++;
+                }
+            }
+
+            // ----------------------------------------------------
+            // RULE 5: OVERTIME LIMIT (ARTICLE 36 VIOLATION)
             // ----------------------------------------------------
             $startOfMonth = $now->copy()->startOfMonth();
             $endOfMonth = $now->copy()->endOfMonth();
@@ -191,7 +362,6 @@ class ComplianceService extends AbstractService
             foreach ($employees as $employee) {
                 $results['ot_scanned']++;
                 
-                // Sum monthly overtime hours
                 $timesheets = Timesheet::where('employee_id', $employee->id)
                     ->whereBetween('date', [$startOfMonth->format('Y-m-d'), $endOfMonth->format('Y-m-d')])
                     ->whereNotNull('check_in')
@@ -204,7 +374,6 @@ class ComplianceService extends AbstractService
                     $checkOut = Carbon::parse($sheet->check_out);
                     $durationHours = $checkOut->diffInMinutes($checkIn) / 60.0;
                     
-                    // Standard standard_hours is typically 8.0 hours
                     $otHours = max(0, $durationHours - 8.0);
                     $totalOtMinutes += ($otHours * 60);
                 }
@@ -232,7 +401,6 @@ class ComplianceService extends AbstractService
                     ]);
                     $results['ot_issues_created']++;
                 } else {
-                    // OT is safe, self-heal
                     $resolved = $this->selfHealIssue('OVERTIME_LIMIT', 'employee_id', $employee->id);
                     if ($resolved) $results['resolved_count']++;
                 }

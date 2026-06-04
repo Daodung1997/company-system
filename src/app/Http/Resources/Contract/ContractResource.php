@@ -13,6 +13,12 @@ class ContractResource extends JsonResource
         return [
             'id' => $this->id,
             'employee_id' => $this->employee_id,
+            'company_id' => $this->company_id,
+            'company_name' => $this->company_name,
+            'company_tax_code' => $this->company_tax_code,
+            'company_address' => $this->company_address,
+            'company_representative' => $this->company_representative,
+            'company_representative_role' => $this->company_representative_role,
             'contract_code' => $this->contract_code,
             'type' => $this->type,
             'employment_type' => $this->employment_type,

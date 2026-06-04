@@ -1,17 +1,14 @@
 <?php
 
-use App\Http\Controllers\Api\Master\CompanyController;
 use App\Http\Controllers\Api\Master\DepartmentController;
+use App\Http\Controllers\Api\Master\CompanySettingController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:api'])->prefix('master')->group(function () {
-    // Company Master
-    Route::prefix('company')->group(function () {
-        Route::get('/', [CompanyController::class, 'index']);
-        Route::post('create', [CompanyController::class, 'store']);
-        Route::get('{code}', [CompanyController::class, 'show']);
-        Route::put('{code}', [CompanyController::class, 'update']);
-        Route::delete('{code}', [CompanyController::class, 'destroy']);
+    // Company Setting
+    Route::prefix('company-setting')->group(function () {
+        Route::get('/', [CompanySettingController::class, 'show']);
+        Route::post('/', [CompanySettingController::class, 'update']);
     });
 
     // Department Master

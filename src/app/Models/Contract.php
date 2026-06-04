@@ -12,6 +12,12 @@ class Contract extends BaseModel
 
     protected $fillable = [
         'employee_id',
+        'company_id',
+        'company_name',
+        'company_tax_code',
+        'company_address',
+        'company_representative',
+        'company_representative_role',
         'contract_code',
         'type',
         'employment_type',
@@ -66,7 +72,10 @@ class Contract extends BaseModel
         return $this->belongsTo(Employee::class);
     }
 
-
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
 
     public function documents()
     {

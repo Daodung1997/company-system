@@ -28,8 +28,8 @@ class TaxRateTypeConst
     public static function getRate(string $type): float
     {
         return match ($type) {
-            self::VAT_8_VN, self::CT_8_JP => 0.08,
-            self::VAT_10_VN, self::CT_10_JP => 0.10,
+            self::VAT_8_VN, self::CT_8_JP, 'VAT_8' => 0.08,
+            self::VAT_10_VN, self::CT_10_JP, 'VAT_10' => 0.10,
             default => 0.00,
         };
     }

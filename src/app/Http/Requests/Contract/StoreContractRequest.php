@@ -15,6 +15,12 @@ class StoreContractRequest extends FormRequest
     {
         return [
             'employee_id' => 'nullable|integer',
+            'company_id' => 'nullable|integer',
+            'company_name' => 'nullable|string|max:255',
+            'company_tax_code' => 'nullable|string|max:50',
+            'company_address' => 'nullable|string|max:255',
+            'company_representative' => 'nullable|string|max:100',
+            'company_representative_role' => 'nullable|string|max:100',
             'contract_code' => 'nullable|string|max:100',
             'type' => 'required|string|in:LABOR,VENDOR,CLIENT',
             'employment_type' => 'nullable|string|in:SEISHAIN,KEIYAKUSHAIN,HAKEN,ARUBAITO,FULL_TIME_VN,PART_TIME_VN',
