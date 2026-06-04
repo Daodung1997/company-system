@@ -138,5 +138,122 @@ class ContractSeeder extends Seeder
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+
+        // Seed mock documents in t_documents
+        $contract1 = DB::table('contracts')->where('contract_code', 'HDLD-2025-0001')->first();
+        $contract2 = DB::table('contracts')->where('contract_code', 'HDLD-2025-0002')->first();
+        $contract3 = DB::table('contracts')->where('contract_code', 'HDTP-2026-0001')->first();
+
+        // Ensure storage directory and files exist
+        \Illuminate\Support\Facades\Storage::disk('public')->put('documents/hop_dong_lao_dong_admin.pdf', 'Dummy PDF Content for Admin Contract');
+        \Illuminate\Support\Facades\Storage::disk('public')->put('documents/cccd_nguyen_van_admin.jpg', 'Dummy Image Content for Admin ID Card');
+        \Illuminate\Support\Facades\Storage::disk('public')->put('documents/hop_dong_lao_dong_manager.pdf', 'Dummy PDF Content for Manager Contract');
+        \Illuminate\Support\Facades\Storage::disk('public')->put('documents/cv_tran_thi_nhan_su.pdf', 'Dummy PDF Content for Manager CV');
+        \Illuminate\Support\Facades\Storage::disk('public')->put('documents/hop_dong_thau_phu_fpt_signed.pdf', 'Dummy PDF Content for FPT Vendor Contract');
+
+        if ($contract1 && $empAdmin) {
+            DB::table('t_documents')->insert([
+                [
+                    'code' => 'DOC00001',
+                    'origin_name' => 'hop_dong_lao_dong_admin.pdf',
+                    'file_path' => 'documents/hop_dong_lao_dong_admin.pdf',
+                    'disk' => 'public',
+                    'extension' => 'pdf',
+                    'filesize' => 102400,
+                    'documentable_id' => $contract1->id,
+                    'documentable_type' => 'App\\Models\\Contract',
+                    'employee_id' => $empAdmin->id,
+                    'contract_id' => $contract1->id,
+                    'transaction_id' => null,
+                    'status' => 'ACTIVE',
+                    'created_by' => 'SYSTEM',
+                    'updated_by' => 'SYSTEM',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+                [
+                    'code' => 'DOC00002',
+                    'origin_name' => 'cccd_nguyen_van_admin.jpg',
+                    'file_path' => 'documents/cccd_nguyen_van_admin.jpg',
+                    'disk' => 'public',
+                    'extension' => 'jpg',
+                    'filesize' => 204800,
+                    'documentable_id' => $empAdmin->id,
+                    'documentable_type' => 'App\\Models\\Employee',
+                    'employee_id' => $empAdmin->id,
+                    'contract_id' => null,
+                    'transaction_id' => null,
+                    'status' => 'ACTIVE',
+                    'created_by' => 'SYSTEM',
+                    'updated_by' => 'SYSTEM',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            ]);
+        }
+
+        if ($contract2 && $empManager) {
+            DB::table('t_documents')->insert([
+                [
+                    'code' => 'DOC00003',
+                    'origin_name' => 'hop_dong_lao_dong_manager.pdf',
+                    'file_path' => 'documents/hop_dong_lao_dong_manager.pdf',
+                    'disk' => 'public',
+                    'extension' => 'pdf',
+                    'filesize' => 98000,
+                    'documentable_id' => $contract2->id,
+                    'documentable_type' => 'App\\Models\\Contract',
+                    'employee_id' => $empManager->id,
+                    'contract_id' => $contract2->id,
+                    'transaction_id' => null,
+                    'status' => 'ACTIVE',
+                    'created_by' => 'SYSTEM',
+                    'updated_by' => 'SYSTEM',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+                [
+                    'code' => 'DOC00004',
+                    'origin_name' => 'cv_tran_thi_nhan_su.pdf',
+                    'file_path' => 'documents/cv_tran_thi_nhan_su.pdf',
+                    'disk' => 'public',
+                    'extension' => 'pdf',
+                    'filesize' => 150000,
+                    'documentable_id' => $empManager->id,
+                    'documentable_type' => 'App\\Models\\Employee',
+                    'employee_id' => $empManager->id,
+                    'contract_id' => null,
+                    'transaction_id' => null,
+                    'status' => 'ACTIVE',
+                    'created_by' => 'SYSTEM',
+                    'updated_by' => 'SYSTEM',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            ]);
+        }
+
+        if ($contract3) {
+            DB::table('t_documents')->insert([
+                [
+                    'code' => 'DOC00005',
+                    'origin_name' => 'hop_dong_thau_phu_fpt_signed.pdf',
+                    'file_path' => 'documents/hop_dong_thau_phu_fpt_signed.pdf',
+                    'disk' => 'public',
+                    'extension' => 'pdf',
+                    'filesize' => 450000,
+                    'documentable_id' => $contract3->id,
+                    'documentable_type' => 'App\\Models\\Contract',
+                    'employee_id' => null,
+                    'contract_id' => $contract3->id,
+                    'transaction_id' => null,
+                    'status' => 'ACTIVE',
+                    'created_by' => 'SYSTEM',
+                    'updated_by' => 'SYSTEM',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            ]);
+        }
     }
 }
