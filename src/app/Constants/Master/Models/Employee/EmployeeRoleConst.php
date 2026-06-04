@@ -8,6 +8,10 @@ class EmployeeRoleConst
 
     public const MANAGER = 'MANAGER';
 
+    public const HR = 'HR';
+
+    public const ACCOUNTANT = 'ACCOUNTANT';
+
     public const STAFF = 'STAFF';
 
     public static function getValues(): array
@@ -15,6 +19,8 @@ class EmployeeRoleConst
         return [
             self::ADMIN,
             self::MANAGER,
+            self::HR,
+            self::ACCOUNTANT,
             self::STAFF,
         ];
     }

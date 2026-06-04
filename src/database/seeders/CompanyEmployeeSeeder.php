@@ -131,12 +131,99 @@ class CompanyEmployeeSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
+        // Seed HR Account
+        DB::table('employees')->insert([
+            'department_id' => $hrDepId,
+            'job_title_id' => $hrStaffTitleId,
+            'code' => 'EMP00003',
+            'full_name' => 'Nguyễn Thị Nhân Sự',
+            'full_name_kana' => 'グエン・ティ・ニャン・ス',
+            'romaji_name' => 'Nguyen Thi Nhan Su',
+            'date_of_birth' => '1995-04-12',
+            'gender' => 'FEMALE',
+            'hometown' => 'Hà Nội, Việt Nam',
+            'place_of_birth' => 'Hà Nội',
+            'nationality' => 'Việt Nam',
+            'ethnicity' => 'Kinh',
+            'religion' => 'Không',
+            'email' => 'hr@compliance.vn',
+            'phone' => '0981112222',
+            'password' => Hash::make('P@ssw0rd123'),
+            'identity_type' => 'CCCD',
+            'identity_number' => '001095005678',
+            'address_registered' => 'Hà Nội',
+            'address_current' => 'Hà Nội',
+            'role' => 'HR',
+            'status' => 'ACTIVE',
+            'join_date' => '2025-03-01',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Seed Accountant Account
+        DB::table('employees')->insert([
+            'department_id' => $hrDepId,
+            'job_title_id' => $hrStaffTitleId,
+            'code' => 'EMP00004',
+            'full_name' => 'Phạm Văn Kế Toán',
+            'full_name_kana' => 'ファム・ヴァン・ケ・トゥアン',
+            'romaji_name' => 'Pham Van Ke Toan',
+            'date_of_birth' => '1992-08-25',
+            'gender' => 'MALE',
+            'hometown' => 'Hải Phòng, Việt Nam',
+            'place_of_birth' => 'Hải Phòng',
+            'nationality' => 'Việt Nam',
+            'ethnicity' => 'Kinh',
+            'religion' => 'Không',
+            'email' => 'accountant@compliance.vn',
+            'phone' => '0983334444',
+            'password' => Hash::make('P@ssw0rd123'),
+            'identity_type' => 'CCCD',
+            'identity_number' => '001092008765',
+            'address_registered' => 'Hải Phòng',
+            'address_current' => 'Hà Nội',
+            'role' => 'ACCOUNTANT',
+            'status' => 'ACTIVE',
+            'join_date' => '2025-03-15',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Seed fixed Staff Account
+        DB::table('employees')->insert([
+            'department_id' => $itDepId,
+            'job_title_id' => $itSeniorTitleId,
+            'code' => 'EMP00005',
+            'full_name' => 'Lê Văn Nhân Viên',
+            'full_name_kana' => 'レ・ヴァン・ニャン・ヴィエン',
+            'romaji_name' => 'Le Van Nhan Vien',
+            'date_of_birth' => '1998-11-30',
+            'gender' => 'MALE',
+            'hometown' => 'Thanh Hóa, Việt Nam',
+            'place_of_birth' => 'Thanh Hóa',
+            'nationality' => 'Việt Nam',
+            'ethnicity' => 'Kinh',
+            'religion' => 'Không',
+            'email' => 'staff@compliance.vn',
+            'phone' => '0985556666',
+            'password' => Hash::make('P@ssw0rd123'),
+            'identity_type' => 'CCCD',
+            'identity_number' => '001098004321',
+            'address_registered' => 'Thanh Hóa',
+            'address_current' => 'Hà Nội',
+            'role' => 'STAFF',
+            'status' => 'ACTIVE',
+            'join_date' => '2025-04-01',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
         // 5. Seed 20 additional employees for testing
         $firstNames = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Huỳnh', 'Phan', 'Vũ', 'Võ', 'Đặng', 'Bùi', 'Đỗ', 'Hồ', 'Ngô', 'Dương', 'Lý'];
         $middleNames = ['Văn', 'Thị', 'Minh', 'Anh', 'Khánh', 'Đức', 'Hồng', 'Hoàng', 'Thanh', 'Ngọc', 'Tuấn', 'Quang'];
         $lastNames = ['Sơn', 'Hải', 'Huy', 'Tùng', 'Nam', 'Trang', 'Vy', 'Linh', 'Hương', 'Hùng', 'Cường', 'Dũng', 'Phong', 'Bình', 'An', 'Khôi'];
 
-        for ($i = 3; $i <= 22; $i++) {
+        for ($i = 6; $i <= 25; $i++) {
             $code = sprintf('EMP%05d', $i);
             $gender = $i % 2 === 0 ? 'FEMALE' : 'MALE';
             

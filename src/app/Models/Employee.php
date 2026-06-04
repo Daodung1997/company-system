@@ -141,4 +141,53 @@ class Employee extends BaseAuthenticateModel implements JWTSubject
     {
         return [];
     }
+
+    /**
+     * Check if user has permission
+     *
+     * @param string $permission
+     * @return bool
+     */
+    public function hasPermissionTo(string $permission): bool
+    {
+        $rolePermissions = [
+            'ADMIN' => ['*'],
+            'MANAGER' => ['*'], // Admin / Giám đốc sees all
+            
+            // HR (Nhân sự) sees employee management, timesheets, and contracts
+            'HR' => [
+                'view-employees', 'create-employees', 'update-employees', 'delete-employees',
+                'view-timesheets', 'approve-timesheets',
+                'view-leave-requests', 'approve-leave-requests',
+                'view-contracts', 'create-contracts', 'update-contracts',
+                'view-documents', 'upload-documents',
+                'view-compliance', 'view-dashboard',
+            ],
+            
+            // ACCOUNTANT (Kế toán) sees financial transactions, documents, payslips, contracts, and compliance
+            'ACCOUNTANT' => [
+                'view-timesheets',
+                'view-payslips', 'create-payslips', 'update-payslips',
+                'view-transactions', 'create-transactions', 'update-transactions', 'delete-transactions',
+                'view-contracts', 'create-contracts', 'update-contracts',
+                'view-documents', 'upload-documents',
+                'view-compliance', 'view-dashboard',
+            ],
+            
+            // STAFF (Nhân viên) only sees personal files/profile/timesheets
+            'STAFF' => [
+                'view-own-profile', 'update-own-profile',
+                'record-timesheet', 'view-own-timesheet',
+                'create-leave-request', 'view-own-leave-requests',
+                'view-own-contracts', 'view-own-documents', 'upload-own-documents',
+            ],
+        ];
+
+        $permissions = $rolePermissions[$this->role] ?? [];
+        if (in_array('*', $permissions)) {
+            return true;
+        }
+
+        return in_array($permission, $permissions);
+    }
 }
