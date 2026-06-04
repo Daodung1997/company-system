@@ -60,6 +60,13 @@ class LeaveRequestService extends AbstractService
             );
         }
 
+        $attachmentPath = null;
+        if (isset($data['attachment']) && $data['attachment'] instanceof \Illuminate\Http\UploadedFile) {
+            $file = $data['attachment'];
+            $filename = time() . '_' . preg_replace('/\s+/', '_', $file->getClientOriginalName());
+            $attachmentPath = $file->storeAs('leave_attachments', $filename, 'public');
+        }
+
         $this->beginTransaction();
         try {
             $leaveRequest = $this->leaveRequestRepository->create([
@@ -69,6 +76,7 @@ class LeaveRequestService extends AbstractService
                 'start_date' => $startDate,
                 'end_date' => $endDate,
                 'reason' => $data['reason'] ?? null,
+                'attachment_path' => $attachmentPath,
                 'status' => 'PENDING',
             ]);
 

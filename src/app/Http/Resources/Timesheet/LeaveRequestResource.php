@@ -17,6 +17,8 @@ class LeaveRequestResource extends JsonResource
             'start_date' => $this->start_date->format('Y-m-d'),
             'end_date' => $this->end_date->format('Y-m-d'),
             'reason' => $this->reason,
+            'attachment_path' => $this->attachment_path,
+            'attachment_url' => $this->attachment_path ? asset('storage/' . $this->attachment_path) : null,
             'status' => $this->status,
             'approved_by' => $this->approved_by,
             'approved_at' => $this->approved_at?->format('Y-m-d H:i:s'),

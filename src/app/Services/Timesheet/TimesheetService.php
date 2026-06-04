@@ -438,7 +438,7 @@ class TimesheetService extends AbstractService
 
         $mappedItems = collect($statsPaginator->items())->map(function ($stat) use ($existingPayslips, $yearMonth) {
             $employeeId = $stat['employee_id'];
-            $employee = \App\Models\Employee::with(['activeContract'])->find($employeeId);
+            $employee = \App\Models\Employee::with(['activeContract', 'department', 'jobTitle'])->find($employeeId);
             
             // Get base salary from active contract or latest work history
             $baseSalary = 10000000;
@@ -495,6 +495,8 @@ class TimesheetService extends AbstractService
                     'employee_code' => $stat['employee_code'],
                     'full_name' => $stat['full_name'],
                     'email' => $stat['email'],
+                    'department_name' => $employee && $employee->department ? $employee->department->name : '',
+                    'job_title_name' => $employee && $employee->jobTitle ? $employee->jobTitle->name : '',
                     'year_month' => $yearMonth,
                     'base_salary' => (double) $payslip->base_salary,
                     'standard_working_days' => (double) $payslip->standard_working_days,
@@ -510,7 +512,7 @@ class TimesheetService extends AbstractService
                     'allowance_attendance' => (double) $payslip->allowance_attendance,
                     'deduction_late' => (double) $payslip->deduction_late,
                     'deduction_leave' => (double) $payslip->deduction_leave,
-                    'deduction_union' => (double) ($payslip->deduction_union ?? 0),
+                    'deduction_union' => (double) ($payslip->deduction_union ?? 50000.0),
                     'deduction_tax' => (double) ($payslip->deduction_tax ?? 0),
                     'advance_payment' => (double) $payslip->advance_payment,
                     'net_salary' => (double) $payslip->net_salary,
@@ -521,10 +523,11 @@ class TimesheetService extends AbstractService
                 ];
             } else {
                 // Calculate net salary and progressive income tax (PIT)
+                $defaultUnionFee = 50000.0;
                 $grossTaxableIncome = $baseSalary + $defaultOtSalary + $defaultAllowance - $defaultDeductionLate - $defaultDeductionLeave;
                 $dependentsCount = $employee ? $employee->dependents_count : 0;
                 $defaultTax = $this->calculateVietnamesePIT($grossTaxableIncome, $dependentsCount);
-                $netSalary = $grossTaxableIncome - $defaultTax;
+                $netSalary = $grossTaxableIncome - $defaultTax - $defaultUnionFee;
 
                 return [
                     'id' => null,
@@ -532,6 +535,8 @@ class TimesheetService extends AbstractService
                     'employee_code' => $stat['employee_code'],
                     'full_name' => $stat['full_name'],
                     'email' => $stat['email'],
+                    'department_name' => $employee && $employee->department ? $employee->department->name : '',
+                    'job_title_name' => $employee && $employee->jobTitle ? $employee->jobTitle->name : '',
                     'year_month' => $yearMonth,
                     'base_salary' => $baseSalary,
                     'standard_working_days' => $standardDays,
@@ -547,7 +552,7 @@ class TimesheetService extends AbstractService
                     'allowance_attendance' => $defaultAllowance,
                     'deduction_late' => round($defaultDeductionLate, 2),
                     'deduction_leave' => round($defaultDeductionLeave, 2),
-                    'deduction_union' => 0.0,
+                    'deduction_union' => $defaultUnionFee,
                     'deduction_tax' => round($defaultTax, 2),
                     'advance_payment' => 0.0,
                     'net_salary' => round(max(0, $netSalary), 2),

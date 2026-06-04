@@ -211,18 +211,18 @@ class ComplianceService extends AbstractService
 
                 $totalOtHours = round($totalOtMinutes / 60.0, 1);
 
-                if ($totalOtHours > 30) {
+                if ($totalOtHours > 20) {
                     $severity = 'INFO';
-                    if ($totalOtHours > 80) {
+                    if ($totalOtHours > 40) {
                         $severity = 'CRITICAL';
-                    } elseif ($totalOtHours > 45) {
+                    } elseif ($totalOtHours > 30) {
                         $severity = 'WARNING';
                     }
 
                     $desc = "Nhân viên {$employee->full_name} ({$employee->code}) đã làm thêm {$totalOtHours} giờ trong tháng " . 
                             "{$now->format('m/Y')}. " . 
-                            ($totalOtHours > 80 ? "Vượt ngưỡng tới hạn 80 giờ của Thỏa ước 36! Cần dừng tăng ca lập tức." : 
-                            ($totalOtHours > 45 ? "Vượt mốc cảnh báo tiêu chuẩn 45 giờ của Thỏa ước 36." : "Đang tiến gần mốc cảnh báo (30/45 giờ)."));
+                            ($totalOtHours > 40 ? "Vượt ngưỡng giới hạn 40 giờ/tháng của Luật Lao động Việt Nam! Cần dừng tăng ca lập tức." : 
+                            ($totalOtHours > 30 ? "Vượt mốc cảnh báo 30 giờ/tháng (giới hạn tối đa là 40 giờ)." : "Đang tiến gần mốc cảnh báo (20/30 giờ)."));
 
                     $this->createOrUpdateIssue([
                         'employee_id' => $employee->id,

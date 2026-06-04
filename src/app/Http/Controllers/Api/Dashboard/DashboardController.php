@@ -302,7 +302,7 @@ class DashboardController extends Controller
             'VISA_EXPIRATION' => 'Hạn thẻ cư trú',
             'CONTRACT_EXPIRATION' => 'Hết hạn hợp đồng',
             'MISSING_INVOICE' => 'Thiếu chứng từ',
-            'OVERTIME_LIMIT' => 'Tăng ca Thỏa ước 36',
+            'OVERTIME_LIMIT' => 'Tăng ca quá giới hạn',
             default => $type,
         };
     }

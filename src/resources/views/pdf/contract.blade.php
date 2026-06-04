@@ -487,10 +487,10 @@
             <div class="compliance-box">
                 <div class="compliance-title">⚠️ ĐIỀU KHOẢN ĐẶC THÙ VỀ TUÂN THỦ LÀM THÊM GIỜ (STANDARDS COOPERATION)</div>
                 @if($contract->is_36_agreement_applicable)
-                    <p style="margin: 2px 0;">• <strong>Áp dụng Thỏa ước 36 (36 Agreement):</strong> Hệ thống giám sát của Công ty sẽ tự động kiểm soát trần thời gian làm thêm giờ tối đa của nhân sự. Tổng số giờ làm thêm không vượt quá 45 giờ/tháng và tối đa 360 giờ/năm tài chính, tuân thủ chặt chẽ tiêu chuẩn từ Bộ Y tế, Lao động và Phúc lợi Nhật Bản.</p>
+                    <p style="margin: 2px 0;">• <strong>Áp dụng Giới hạn làm thêm giờ (Bộ Luật Lao động Việt Nam):</strong> Hệ thống giám sát của Công ty sẽ tự động kiểm soát trần thời gian làm thêm giờ tối đa của nhân sự. Tổng số giờ làm thêm không vượt quá 40 giờ/tháng và tối đa 200 giờ/năm (hoặc tối đa 300 giờ/năm trong các trường hợp đặc biệt được cơ quan nhà nước chấp thuận), tuân thủ chặt chẽ các quy định tại Điều 107 Bộ luật Lao động 2019.</p>
                 @endif
                 @if($contract->overtime_allowance_included)
-                    <p style="margin: 2px 0;">• <strong>Chế độ Lương OT gộp sẵn (Minashi Zangyou):</strong> Lương cơ bản tại Điều 2 đã bao gồm phụ cấp làm thêm giờ gộp sẵn tương ứng với tối đa <strong>{{ $contract->included_overtime_hours ?? 0 }} giờ/tháng</strong>. Mọi giờ làm việc ngoài giờ thực tế vượt quá hạn mức trên sẽ được ghi nhận tự động bằng hệ thống Timesheet và chi trả bổ sung đầy đủ.</p>
+                    <p style="margin: 2px 0;">• <strong>Chế độ Lương làm thêm giờ khoán (Lump-sum Overtime):</strong> Lương cơ bản tại Điều 2 đã bao gồm phụ cấp làm thêm giờ gộp sẵn tương ứng với tối đa <strong>{{ $contract->included_overtime_hours ?? 0 }} giờ/tháng</strong>. Mọi giờ làm việc ngoài giờ thực tế vượt quá hạn mức trên sẽ được ghi nhận tự động bằng hệ thống Timesheet và chi trả bổ sung đầy đủ.</p>
                 @endif
             </div>
         @endif

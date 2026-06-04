@@ -74,6 +74,33 @@ class LeaveRequestTest extends TestCase
         ]);
     }
 
+    public function test_employee_can_create_leave_request_with_attachment()
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+
+        $file = \Illuminate\Http\UploadedFile::fake()->create('medical_certificate.pdf', 500, 'application/pdf');
+
+        $response = $this->actingAs($this->staff, 'api')
+            ->postJson('/api/leave-requests', [
+                'leave_type' => 'SICK',
+                'start_date' => '2026-06-15',
+                'end_date' => '2026-06-16',
+                'reason' => 'Khám sức khỏe định kỳ',
+                'attachment' => $file,
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.status', 'PENDING')
+            ->assertJsonPath('data.leave_type', 'SICK');
+
+        $this->assertNotNull($response->json('data.attachment_path'));
+        $this->assertNotNull($response->json('data.attachment_url'));
+
+        $attachmentPath = $response->json('data.attachment_path');
+
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($attachmentPath);
+    }
+
     public function test_cannot_create_leave_request_with_invalid_dates()
     {
         $response = $this->actingAs($this->staff, 'api')
