@@ -32,6 +32,12 @@ return new class extends Migration
             $table->string('address')->nullable();
             $table->string('website')->nullable();
             $table->string('hanko_seal_path')->nullable();
+            $table->string('logo_path')->nullable();
+            $table->string('background_path')->nullable();
+            $table->string('sidebar_name')->nullable();
+            $table->string('slogan_1')->nullable();
+            $table->string('slogan_2')->nullable();
+            $table->string('slogan_3')->nullable();
             $table->timestamps();
         });
     }

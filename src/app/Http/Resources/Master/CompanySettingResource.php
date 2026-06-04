@@ -30,6 +30,13 @@ class CompanySettingResource extends JsonResource
             'address' => $this->address,
             'website' => $this->website,
             'hanko_seal_path' => $this->hanko_seal_path,
+            'logo_path' => $this->logo_path,
+            'background_path' => $this->background_path,
+            'sidebar_name' => $this->sidebar_name,
+            'sidebar_sub_name' => $this->sidebar_sub_name,
+            'slogan_1' => $this->slogan_1,
+            'slogan_2' => $this->slogan_2,
+            'slogan_3' => $this->slogan_3,
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
         ];

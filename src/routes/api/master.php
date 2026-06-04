@@ -4,12 +4,14 @@ use App\Http\Controllers\Api\Master\DepartmentController;
 use App\Http\Controllers\Api\Master\CompanySettingController;
 use Illuminate\Support\Facades\Route;
 
+// Public Master Routes
+Route::prefix('master')->group(function () {
+    Route::get('company-setting', [CompanySettingController::class, 'show']);
+});
+
+// Protected Master Routes (Require Authentication)
 Route::middleware(['auth:api'])->prefix('master')->group(function () {
-    // Company Setting
-    Route::prefix('company-setting')->group(function () {
-        Route::get('/', [CompanySettingController::class, 'show']);
-        Route::post('/', [CompanySettingController::class, 'update']);
-    });
+    Route::post('company-setting', [CompanySettingController::class, 'update']);
 
     // Department Master
     Route::prefix('department')->group(function () {

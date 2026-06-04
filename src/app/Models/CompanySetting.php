@@ -32,6 +32,13 @@ class CompanySetting extends Model
         'address',
         'website',
         'hanko_seal_path',
+        'logo_path',
+        'background_path',
+        'sidebar_name',
+        'sidebar_sub_name',
+        'slogan_1',
+        'slogan_2',
+        'slogan_3',
     ];
 
     protected $casts = [

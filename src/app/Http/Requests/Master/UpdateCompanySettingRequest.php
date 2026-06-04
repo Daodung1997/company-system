@@ -36,6 +36,13 @@ class UpdateCompanySettingRequest extends FormRequest
             'address' => ['nullable', 'string', 'max:500'],
             'website' => ['nullable', 'string', 'max:255'],
             'hanko_seal_path' => ['nullable', 'string', 'max:255'],
+            'logo_path' => ['nullable', 'string', 'max:255'],
+            'background_path' => ['nullable', 'string', 'max:255'],
+            'sidebar_name' => ['nullable', 'string', 'max:255'],
+            'sidebar_sub_name' => ['nullable', 'string', 'max:255'],
+            'slogan_1' => ['nullable', 'string', 'max:255'],
+            'slogan_2' => ['nullable', 'string', 'max:255'],
+            'slogan_3' => ['nullable', 'string', 'max:255'],
         ];
     }
 

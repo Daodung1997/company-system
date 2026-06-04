@@ -33,6 +33,12 @@ class CompanySettingSeeder extends Seeder
                 'address' => 'Tòa nhà Keangnam Landmark 72, Đường Phạm Hùng, Phường Mễ Trì, Quận Nam Từ Liêm, Hà Nội',
                 'website' => 'https://techsolutions.com.vn',
                 'hanko_seal_path' => '/seals/default_seal.png',
+                'logo_path' => null,
+                'background_path' => null,
+                'sidebar_name' => 'Tech Solutions',
+                'slogan_1' => 'Tiên phong Công nghệ - Kiến tạo Tương lai',
+                'slogan_2' => 'Hệ thống Quản lý Tuân thủ Doanh nghiệp Compliance System',
+                'slogan_3' => 'Nâng tầm Quản trị, Tối ưu Vận hành',
             ]
         );
     }
