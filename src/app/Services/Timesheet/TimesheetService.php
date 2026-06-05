@@ -390,7 +390,7 @@ class TimesheetService extends AbstractService
         }
 
         $perPage = $params['per_page'] ?? 15;
-        return $query->orderBy('code', 'asc')->paginate($perPage);
+        return $query->orderBy('id', 'desc')->paginate($perPage);
     }
 
     /**
