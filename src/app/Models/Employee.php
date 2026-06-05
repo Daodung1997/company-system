@@ -112,6 +112,11 @@ class Employee extends BaseAuthenticateModel implements JWTSubject
         return $this->hasMany(Document::class, 'employee_id', 'id')->whereNull('contract_id')->whereNull('transaction_id');
     }
 
+    public function payslips()
+    {
+        return $this->hasMany(Payslip::class, 'employee_id', 'id')->orderBy('year_month', 'desc');
+    }
+
     public function activeContract()
     {
         return $this->hasOne(Contract::class, 'employee_id', 'id')->where('status', 'ACTIVE');
@@ -166,6 +171,7 @@ class Employee extends BaseAuthenticateModel implements JWTSubject
             
             // ACCOUNTANT (Kế toán) sees financial transactions, documents, payslips, contracts, and compliance
             'ACCOUNTANT' => [
+                'view-employees',
                 'view-timesheets',
                 'view-payslips', 'create-payslips', 'update-payslips',
                 'view-transactions', 'create-transactions', 'update-transactions', 'delete-transactions',

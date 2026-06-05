@@ -19,7 +19,7 @@ class LeaveRequestRepository extends Repository
     {
         return $this->model
             ->where('employee_id', $employeeId)
-            ->orderBy('start_date', 'desc')
+            ->orderBy('created_at', 'desc')
             ->get();
     }
 

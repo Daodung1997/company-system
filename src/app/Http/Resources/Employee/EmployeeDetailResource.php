@@ -120,6 +120,67 @@ class EmployeeDetailResource extends JsonResource
                     ];
                 });
             }),
+            'payslips' => $this->whenLoaded('payslips', function () {
+                $user = auth('api')->user();
+                if (!$user || ($user->id !== $this->id && !$user->hasPermissionTo('view-payslips'))) {
+                    return null;
+                }
+
+                $timesheetMonths = \App\Models\Timesheet::where('employee_id', $this->id)
+                    ->selectRaw("SUBSTRING(date, 1, 7) as ym")
+                    ->groupBy('ym')
+                    ->pluck('ym')
+                    ->toArray();
+
+                $months = array_unique(array_merge($timesheetMonths, [date('Y-m')]));
+                $savedPayslips = $this->payslips->keyBy('year_month');
+                $payrollList = [];
+
+                $timesheetService = resolve(\App\Services\Timesheet\TimesheetService::class);
+
+                foreach ($months as $ym) {
+                    if ($savedPayslips->has($ym)) {
+                        $payrollList[] = $savedPayslips->get($ym);
+                    } else {
+                        try {
+                            $payrollData = $timesheetService->getPayroll($ym, 1, 1, $this->code);
+                            $defaultPayroll = collect($payrollData['data'])->firstWhere('employee_id', $this->id);
+                            if ($defaultPayroll) {
+                                $payrollList[] = (object) $defaultPayroll;
+                            }
+                        } catch (\Throwable $e) {
+                            // Ignore errors for individual month calculations
+                        }
+                    }
+                }
+
+                return collect($payrollList)->sortByDesc('year_month')->values()->map(function ($payslip) {
+                    return [
+                        'id' => $payslip->id ?? null,
+                        'year_month' => $payslip->year_month,
+                        'base_salary' => $payslip->base_salary,
+                        'standard_working_days' => $payslip->standard_working_days,
+                        'actual_working_days' => $payslip->actual_working_days,
+                        'overtime_hours' => $payslip->overtime_hours,
+                        'overtime_salary' => $payslip->overtime_salary,
+                        'overtime_hours_normal' => $payslip->overtime_hours_normal,
+                        'overtime_salary_normal' => $payslip->overtime_salary_normal,
+                        'overtime_hours_weekend' => $payslip->overtime_hours_weekend,
+                        'overtime_salary_weekend' => $payslip->overtime_salary_weekend,
+                        'overtime_hours_holiday' => $payslip->overtime_hours_holiday,
+                        'overtime_salary_holiday' => $payslip->overtime_salary_holiday,
+                        'allowance_attendance' => $payslip->allowance_attendance,
+                        'deduction_late' => $payslip->deduction_late,
+                        'deduction_leave' => $payslip->deduction_leave,
+                        'deduction_union' => $payslip->deduction_union ?? 50000.0,
+                        'deduction_tax' => $payslip->deduction_tax,
+                        'advance_payment' => $payslip->advance_payment,
+                        'net_salary' => $payslip->net_salary,
+                        'status' => $payslip->status ?? 'PENDING',
+                        'note' => $payslip->note ?? '',
+                    ];
+                });
+            }),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

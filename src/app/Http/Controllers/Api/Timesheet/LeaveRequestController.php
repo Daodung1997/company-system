@@ -44,7 +44,7 @@ class LeaveRequestController extends Controller
     public function listPending()
     {
         $user = auth()->user();
-        if ($user->role !== EmployeeRoleConst::MANAGER && $user->role !== EmployeeRoleConst::ADMIN) {
+        if (!$user->hasPermissionTo('view-leave-requests')) {
             throw new BusinessException(
                 ExceptionCode::EMPLOYEE_PERMISSION_DENIED,
                 'Bạn không có quyền thực hiện hành động này.',
@@ -63,7 +63,7 @@ class LeaveRequestController extends Controller
     public function approve(int $id, ApproveLeaveRequest $request)
     {
         $user = auth()->user();
-        if ($user->role !== EmployeeRoleConst::MANAGER && $user->role !== EmployeeRoleConst::ADMIN) {
+        if (!$user->hasPermissionTo('approve-leave-requests')) {
             throw new BusinessException(
                 ExceptionCode::EMPLOYEE_PERMISSION_DENIED,
                 'Bạn không có quyền thực hiện hành động này.',

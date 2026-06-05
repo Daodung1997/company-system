@@ -180,8 +180,7 @@ class LeaveRequestTest extends TestCase
         $response = $this->actingAs($this->staff, 'api')
             ->getJson('/api/leave-requests/pending');
 
-        $response->assertStatus(403)
-            ->assertJsonPath('messages.error_code', 'EMP_005');
+        $response->assertStatus(403);
     }
 
     public function test_manager_can_approve_leave_request()

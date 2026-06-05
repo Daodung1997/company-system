@@ -174,7 +174,7 @@ class TimesheetRepository extends Repository
                 $sub->where('date', 'like', "{$yearMonth}%");
             },
             'employeeShifts.workingHourConfig'
-        ]);
+        ])->orderBy('id', 'desc');
 
         if (!empty($search)) {
             $employeeQuery->where(function ($q) use ($search) {

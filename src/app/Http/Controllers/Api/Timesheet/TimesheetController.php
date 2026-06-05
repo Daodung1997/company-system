@@ -55,7 +55,7 @@ class TimesheetController extends Controller
     public function manage(Request $request)
     {
         $user = auth()->user();
-        if ($user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::MANAGER && $user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::ADMIN) {
+        if (!$user->hasPermissionTo('view-timesheets')) {
             throw new \App\Exceptions\BusinessException(
                 \App\Constants\Commons\ExceptionCode::EMPLOYEE_PERMISSION_DENIED,
                 'Bạn không có quyền thực hiện hành động này.',
@@ -80,7 +80,7 @@ class TimesheetController extends Controller
     public function statistics(Request $request)
     {
         $user = auth()->user();
-        if ($user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::MANAGER && $user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::ADMIN) {
+        if (!$user->hasPermissionTo('view-timesheets')) {
             throw new \App\Exceptions\BusinessException(
                 \App\Constants\Commons\ExceptionCode::EMPLOYEE_PERMISSION_DENIED,
                 'Bạn không có quyền thực hiện hành động này.',
@@ -111,7 +111,7 @@ class TimesheetController extends Controller
     public function storeManual(Request $request)
     {
         $user = auth()->user();
-        if ($user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::MANAGER && $user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::ADMIN) {
+        if (!$user->hasPermissionTo('approve-timesheets')) {
             throw new \App\Exceptions\BusinessException(
                 \App\Constants\Commons\ExceptionCode::EMPLOYEE_PERMISSION_DENIED,
                 'Bạn không có quyền thực hiện hành động này.',
@@ -139,7 +139,7 @@ class TimesheetController extends Controller
     public function listWorkingHourConfigs()
     {
         $user = auth()->user();
-        if ($user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::MANAGER && $user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::ADMIN) {
+        if (!$user->hasPermissionTo('view-timesheets')) {
             throw new \App\Exceptions\BusinessException(
                 \App\Constants\Commons\ExceptionCode::EMPLOYEE_PERMISSION_DENIED,
                 'Bạn không có quyền thực hiện hành động này.',
@@ -157,7 +157,7 @@ class TimesheetController extends Controller
     public function storeWorkingHourConfig(Request $request)
     {
         $user = auth()->user();
-        if ($user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::MANAGER && $user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::ADMIN) {
+        if (!$user->hasPermissionTo('approve-timesheets')) {
             throw new \App\Exceptions\BusinessException(
                 \App\Constants\Commons\ExceptionCode::EMPLOYEE_PERMISSION_DENIED,
                 'Bạn không có quyền thực hiện hành động này.',
@@ -185,7 +185,7 @@ class TimesheetController extends Controller
     public function deleteWorkingHourConfig($id)
     {
         $user = auth()->user();
-        if ($user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::MANAGER && $user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::ADMIN) {
+        if (!$user->hasPermissionTo('approve-timesheets')) {
             throw new \App\Exceptions\BusinessException(
                 \App\Constants\Commons\ExceptionCode::EMPLOYEE_PERMISSION_DENIED,
                 'Bạn không có quyền thực hiện hành động này.',
@@ -203,7 +203,7 @@ class TimesheetController extends Controller
     public function listEmployeeShifts(Request $request)
     {
         $user = auth()->user();
-        if ($user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::MANAGER && $user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::ADMIN) {
+        if (!$user->hasPermissionTo('view-timesheets')) {
             throw new \App\Exceptions\BusinessException(
                 \App\Constants\Commons\ExceptionCode::EMPLOYEE_PERMISSION_DENIED,
                 'Bạn không có quyền thực hiện hành động này.',
@@ -222,7 +222,7 @@ class TimesheetController extends Controller
     public function storeEmployeeShift(Request $request)
     {
         $user = auth()->user();
-        if ($user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::MANAGER && $user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::ADMIN) {
+        if (!$user->hasPermissionTo('approve-timesheets')) {
             throw new \App\Exceptions\BusinessException(
                 \App\Constants\Commons\ExceptionCode::EMPLOYEE_PERMISSION_DENIED,
                 'Bạn không có quyền thực hiện hành động này.',
@@ -248,7 +248,7 @@ class TimesheetController extends Controller
     public function deleteEmployeeShift($id)
     {
         $user = auth()->user();
-        if ($user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::MANAGER && $user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::ADMIN) {
+        if (!$user->hasPermissionTo('approve-timesheets')) {
             throw new \App\Exceptions\BusinessException(
                 \App\Constants\Commons\ExceptionCode::EMPLOYEE_PERMISSION_DENIED,
                 'Bạn không có quyền thực hiện hành động này.',
@@ -266,7 +266,7 @@ class TimesheetController extends Controller
     public function listEmployeeShiftsCalendar(Request $request)
     {
         $user = auth()->user();
-        if ($user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::MANAGER && $user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::ADMIN) {
+        if (!$user->hasPermissionTo('view-timesheets')) {
             throw new \App\Exceptions\BusinessException(
                 \App\Constants\Commons\ExceptionCode::EMPLOYEE_PERMISSION_DENIED,
                 'Bạn không có quyền thực hiện hành động này.',
@@ -299,7 +299,7 @@ class TimesheetController extends Controller
     public function resetEmployeeShifts(Request $request)
     {
         $user = auth()->user();
-        if ($user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::MANAGER && $user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::ADMIN) {
+        if (!$user->hasPermissionTo('approve-timesheets')) {
             throw new \App\Exceptions\BusinessException(
                 \App\Constants\Commons\ExceptionCode::EMPLOYEE_PERMISSION_DENIED,
                 'Bạn không có quyền thực hiện hành động này.',
@@ -324,7 +324,7 @@ class TimesheetController extends Controller
     public function getPayroll(Request $request)
     {
         $user = auth()->user();
-        if ($user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::MANAGER && $user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::ADMIN) {
+        if (!$user->hasPermissionTo('view-payslips')) {
             throw new \App\Exceptions\BusinessException(
                 \App\Constants\Commons\ExceptionCode::EMPLOYEE_PERMISSION_DENIED,
                 'Bạn không có quyền thực hiện hành động này.',
@@ -347,7 +347,7 @@ class TimesheetController extends Controller
     public function savePayroll(Request $request)
     {
         $user = auth()->user();
-        if ($user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::MANAGER && $user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::ADMIN) {
+        if (!$user->hasPermissionTo('create-payslips')) {
             throw new \App\Exceptions\BusinessException(
                 \App\Constants\Commons\ExceptionCode::EMPLOYEE_PERMISSION_DENIED,
                 'Bạn không có quyền thực hiện hành động này.',
@@ -390,7 +390,7 @@ class TimesheetController extends Controller
     public function exportPayrollExcel(Request $request)
     {
         $user = auth('api')->user();
-        if ($user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::MANAGER && $user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::ADMIN) {
+        if (!$user->hasPermissionTo('view-payslips')) {
             throw new \App\Exceptions\BusinessException(
                 \App\Constants\Commons\ExceptionCode::EMPLOYEE_PERMISSION_DENIED,
                 'Bạn không có quyền thực hiện hành động này.',
@@ -485,7 +485,7 @@ class TimesheetController extends Controller
     public function exportPayrollPdf(Request $request)
     {
         $user = auth('api')->user();
-        if ($user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::MANAGER && $user->role !== \App\Constants\Master\Models\Employee\EmployeeRoleConst::ADMIN) {
+        if (!$user->hasPermissionTo('view-payslips')) {
             throw new \App\Exceptions\BusinessException(
                 \App\Constants\Commons\ExceptionCode::EMPLOYEE_PERMISSION_DENIED,
                 'Bạn không có quyền thực hiện hành động này.',

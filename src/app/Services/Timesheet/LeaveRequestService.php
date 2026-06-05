@@ -67,6 +67,20 @@ class LeaveRequestService extends AbstractService
             $filename = time() . '_' . preg_replace('/\s+/', '_', $file->getClientOriginalName());
             $attachmentPath = $file->storeAs('leave_attachments', $filename, 'public');
         }
+        $employee = \App\Models\Employee::find($employeeId);
+        $role = $employee ? $employee->role : 'STAFF';
+
+        $status = 'PENDING';
+        $approvedBy = null;
+        $approvedAt = null;
+        $approverNote = null;
+
+        if (in_array($role, ['ADMIN', 'MANAGER'])) {
+            $status = 'APPROVED';
+            $approvedBy = $employeeId;
+            $approvedAt = Carbon::now()->toDateTimeString();
+            $approverNote = 'Hệ thống tự động phê duyệt cho Admin/Giám đốc/Trưởng phòng.';
+        }
 
         $this->beginTransaction();
         try {
@@ -78,30 +92,68 @@ class LeaveRequestService extends AbstractService
                 'end_date' => $endDate,
                 'reason' => $data['reason'] ?? null,
                 'attachment_path' => $attachmentPath,
-                'status' => 'PENDING',
+                'status' => $status,
+                'approved_by' => $approvedBy,
+                'approved_at' => $approvedAt,
+                'approver_note' => $approverNote,
             ]);
 
             $this->commitTransaction();
 
-            // Send notification to all managers about the new leave request
+            // Send notification to all managers/admins/HR about the new leave request
             $employeeName = $leaveRequest->employee?->full_name ?? 'Nhân viên';
-            NotificationService::sendToRole(
-                'MANAGER',
-                'LEAVE_REQUEST_CREATED',
-                'Đơn xin nghỉ phép mới',
-                "{$employeeName} đã gửi đơn xin nghỉ phép từ {$startDate} đến {$endDate}.",
-                '/leave-request/pending',
-                ['leave_request_id' => $leaveRequest->id]
-            );
-            // Also notify ADMINs
-            NotificationService::sendToRole(
-                'ADMIN',
-                'LEAVE_REQUEST_CREATED',
-                'Đơn xin nghỉ phép mới',
-                "{$employeeName} đã gửi đơn xin nghỉ phép từ {$startDate} đến {$endDate}.",
-                '/leave-request/pending',
-                ['leave_request_id' => $leaveRequest->id]
-            );
+            
+            if ($status === 'APPROVED') {
+                NotificationService::sendToRole(
+                    'MANAGER',
+                    'LEAVE_REQUEST_APPROVED',
+                    'Đơn xin nghỉ phép đã được duyệt',
+                    "Đơn nghỉ phép của {$employeeName} (Admin/Quản lý) từ {$startDate} đến {$endDate} đã tự động được duyệt.",
+                    '/leave-request/pending',
+                    ['leave_request_id' => $leaveRequest->id]
+                );
+                NotificationService::sendToRole(
+                    'ADMIN',
+                    'LEAVE_REQUEST_APPROVED',
+                    'Đơn xin nghỉ phép đã được duyệt',
+                    "Đơn nghỉ phép của {$employeeName} (Admin/Quản lý) từ {$startDate} đến {$endDate} đã tự động được duyệt.",
+                    '/leave-request/pending',
+                    ['leave_request_id' => $leaveRequest->id]
+                );
+                NotificationService::sendToRole(
+                    'HR',
+                    'LEAVE_REQUEST_APPROVED',
+                    'Đơn xin nghỉ phép đã được duyệt',
+                    "Đơn nghỉ phép của {$employeeName} (Admin/Quản lý) từ {$startDate} đến {$endDate} đã tự động được duyệt.",
+                    '/leave-request/pending',
+                    ['leave_request_id' => $leaveRequest->id]
+                );
+            } else {
+                NotificationService::sendToRole(
+                    'MANAGER',
+                    'LEAVE_REQUEST_CREATED',
+                    'Đơn xin nghỉ phép mới',
+                    "{$employeeName} đã gửi đơn xin nghỉ phép từ {$startDate} đến {$endDate}.",
+                    '/leave-request/pending',
+                    ['leave_request_id' => $leaveRequest->id]
+                );
+                NotificationService::sendToRole(
+                    'ADMIN',
+                    'LEAVE_REQUEST_CREATED',
+                    'Đơn xin nghỉ phép mới',
+                    "{$employeeName} đã gửi đơn xin nghỉ phép từ {$startDate} đến {$endDate}.",
+                    '/leave-request/pending',
+                    ['leave_request_id' => $leaveRequest->id]
+                );
+                NotificationService::sendToRole(
+                    'HR',
+                    'LEAVE_REQUEST_CREATED',
+                    'Đơn xin nghỉ phép mới',
+                    "{$employeeName} đã gửi đơn xin nghỉ phép từ {$startDate} đến {$endDate}.",
+                    '/leave-request/pending',
+                    ['leave_request_id' => $leaveRequest->id]
+                );
+            }
 
             return $leaveRequest;
         } catch (\Throwable $e) {

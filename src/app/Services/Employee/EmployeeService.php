@@ -40,7 +40,7 @@ class EmployeeService extends AbstractService
     public function show(int $id)
     {
         $employee = $this->employeeRepository
-            ->with(['jobTitle', 'department', 'relatives', 'contracts.documents', 'documents', 'workHistories.department', 'workHistories.jobTitle'])
+            ->with(['jobTitle', 'department', 'relatives', 'contracts.documents', 'documents', 'workHistories.department', 'workHistories.jobTitle', 'payslips'])
             ->find($id);
 
         if (!$employee) {

@@ -515,12 +515,14 @@ class TimesheetService extends AbstractService
                     'is_saved' => true,
                 ];
             } else {
-                // Calculate net salary and progressive income tax (PIT)
+                // Calculate net salary and progressive income tax (PIT) with insurance
                 $defaultUnionFee = 50000.0;
-                $grossTaxableIncome = $baseSalary + $defaultOtSalary + $defaultAllowance - $defaultDeductionLate - $defaultDeductionLeave;
+                $grossSalary = max(0.0, $baseSalary + $defaultOtSalary + $defaultAllowance - $defaultDeductionLate - $defaultDeductionLeave);
+                $insuranceDeduction = $grossSalary * 0.105; // 8% BHXH + 1.5% BHYT + 1% BHTN
+                $incomeBeforeTax = max(0.0, $grossSalary - $insuranceDeduction);
                 $dependentsCount = $employee ? $employee->dependents_count : 0;
-                $defaultTax = $this->calculateVietnamesePIT($grossTaxableIncome, $dependentsCount);
-                $netSalary = $grossTaxableIncome - $defaultTax - $defaultUnionFee;
+                $defaultTax = $this->calculateVietnamesePIT($incomeBeforeTax, $dependentsCount);
+                $netSalary = $incomeBeforeTax - $defaultTax - $defaultUnionFee;
 
                 return [
                     'id' => null,
@@ -625,35 +627,31 @@ class TimesheetService extends AbstractService
     /**
      * Calculate personal income tax (PIT) according to 2026 Vietnamese progressive tax brackets.
      */
-    private function calculateVietnamesePIT(float $grossTaxableIncome, int $dependentsCount): float
+    private function calculateVietnamesePIT(float $incomeBeforeTax, int $dependentsCount): float
     {
-        // Giảm trừ bản thân (Self deduction): 11,000,000 VND
-        $selfDeduction = 11000000;
-        // Giảm trừ gia cảnh (Dependent deduction): 4,400,000 VND per dependent
-        $dependentDeduction = $dependentsCount * 4400000;
+        // Giảm trừ bản thân (Self deduction): 15,500,000 VND
+        $selfDeduction = 15500000;
+        // Giảm trừ gia cảnh (Dependent deduction): 6,200,000 VND per dependent
+        $dependentDeduction = $dependentsCount * 6200000;
         
         // Thu nhập tính thuế (Taxable income after deductions)
-        $taxableIncome = max(0.0, $grossTaxableIncome - $selfDeduction - $dependentDeduction);
+        $taxableIncome = max(0.0, $incomeBeforeTax - $selfDeduction - $dependentDeduction);
         
         if ($taxableIncome <= 0) {
             return 0.0;
         }
         
-        // 2026 Vietnamese progressive tax brackets (Biểu thuế lũy tiến từng phần)
-        if ($taxableIncome <= 5000000) {
+        // 2026 Vietnamese progressive tax brackets (Biểu thuế lũy tiến từng phần 5 bậc mới)
+        if ($taxableIncome <= 10000000) {
             return $taxableIncome * 0.05;
-        } elseif ($taxableIncome <= 10000000) {
-            return $taxableIncome * 0.10 - 250000;
-        } elseif ($taxableIncome <= 18000000) {
-            return $taxableIncome * 0.15 - 750000;
-        } elseif ($taxableIncome <= 32000000) {
-            return $taxableIncome * 0.20 - 1650000;
-        } elseif ($taxableIncome <= 52000000) {
-            return $taxableIncome * 0.25 - 3250000;
-        } elseif ($taxableIncome <= 80000000) {
-            return $taxableIncome * 0.30 - 5850000;
+        } elseif ($taxableIncome <= 30000000) {
+            return $taxableIncome * 0.10 - 500000;
+        } elseif ($taxableIncome <= 60000000) {
+            return $taxableIncome * 0.20 - 3500000;
+        } elseif ($taxableIncome <= 100000000) {
+            return $taxableIncome * 0.30 - 9500000;
         } else {
-            return $taxableIncome * 0.35 - 9850000;
+            return $taxableIncome * 0.35 - 14500000;
         }
     }
 }
