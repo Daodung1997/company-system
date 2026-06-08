@@ -36,8 +36,13 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction
 RUN chown -R www-data:www-data storage bootstrap/cache
 RUN chmod -R 775 storage bootstrap/cache
 
+# Make docker-entrypoint.sh executable
+RUN chmod +x docker-entrypoint.sh
+
 # Expose HTTP port 80
 EXPOSE 80
+
+ENTRYPOINT ["/var/www/html/docker-entrypoint.sh"]
 
 # Run Apache in the foreground
 CMD ["apache2-foreground"]
