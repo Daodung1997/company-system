@@ -129,11 +129,12 @@ class TimesheetRepository extends Repository
             // Calculate diff
             $checkoutDiff = null;
             if ($timesheet->check_out && $expectedEnd) {
-                $checkOutCarbon = \Carbon\Carbon::parse($timesheet->check_out);
+                $tz = $timesheet->timezone ?: 'Asia/Ho_Chi_Minh';
+                $checkOutCarbon = \Carbon\Carbon::parse($timesheet->check_out)->setTimezone($tz);
                 // Extract only time from check_out and build a Carbon date on dateStr
                 $checkOutTime = $checkOutCarbon->format('H:i:s');
-                $checkOutOnDay = \Carbon\Carbon::parse($dateStr . ' ' . $checkOutTime);
-                $expectedEndCarbon = \Carbon\Carbon::parse($dateStr . ' ' . $expectedEnd);
+                $checkOutOnDay = \Carbon\Carbon::parse($dateStr . ' ' . $checkOutTime, $tz);
+                $expectedEndCarbon = \Carbon\Carbon::parse($dateStr . ' ' . $expectedEnd, $tz);
                 
                 // Difference in minutes (positive means extra time worked, negative means left early)
                 $checkoutDiff = $expectedEndCarbon->diffInMinutes($checkOutOnDay, false);
@@ -307,11 +308,12 @@ class TimesheetRepository extends Repository
                             $dayWeight = $dayLeave ? 0.5 : 1.0;
 
                             if ($t->check_in) {
-                                $checkInTime = \Carbon\Carbon::parse($t->check_in)->format('H:i:s');
+                                $tz = $t->timezone ?: 'Asia/Ho_Chi_Minh';
+                                $checkInCarbon = \Carbon\Carbon::parse($t->check_in)->setTimezone($tz);
+                                $checkInTime = $checkInCarbon->format('H:i:s');
                                 if ($expectedStart && $checkInTime > $expectedStart) {
                                     $isLate = true;
-                                    $startCarbon = \Carbon\Carbon::parse($dateStr . ' ' . $expectedStart);
-                                    $checkInCarbon = \Carbon\Carbon::parse($t->check_in);
+                                    $startCarbon = \Carbon\Carbon::parse($dateStr . ' ' . $expectedStart, $tz);
                                     $lateMinutes = $startCarbon->diffInMinutes($checkInCarbon, false);
                                     
                                     if ($lateMinutes > 0) {
@@ -332,11 +334,12 @@ class TimesheetRepository extends Repository
                             // Calculate overtime
                             $dailyOt = 0.0;
                             if ($t->check_out) {
+                                $tz = $t->timezone ?: 'Asia/Ho_Chi_Minh';
+                                $checkOutCarbon = \Carbon\Carbon::parse($t->check_out)->setTimezone($tz);
                                 if ($expectedEnd) {
-                                    $checkOutTime = \Carbon\Carbon::parse($t->check_out)->format('H:i:s');
+                                    $checkOutTime = $checkOutCarbon->format('H:i:s');
                                     if ($checkOutTime > $expectedEnd) {
-                                        $checkOutCarbon = \Carbon\Carbon::parse($t->check_out);
-                                        $endCarbon = \Carbon\Carbon::parse($dateStr . ' ' . $expectedEnd);
+                                        $endCarbon = \Carbon\Carbon::parse($dateStr . ' ' . $expectedEnd, $tz);
                                         $overtimeMinutes = $endCarbon->diffInMinutes($checkOutCarbon, false);
                                         if ($overtimeMinutes > 0) {
                                             $dailyOt = round($overtimeMinutes / 60.0, 2);
@@ -352,8 +355,7 @@ class TimesheetRepository extends Repository
                                 } else {
                                     // Weekend or holiday shift, if they checked in and out, count the whole duration
                                     if ($t->check_in) {
-                                        $checkInCarbon = \Carbon\Carbon::parse($t->check_in);
-                                        $checkOutCarbon = \Carbon\Carbon::parse($t->check_out);
+                                        $checkInCarbon = \Carbon\Carbon::parse($t->check_in)->setTimezone($tz);
                                         $overtimeMinutes = $checkInCarbon->diffInMinutes($checkOutCarbon, false);
                                         if ($overtimeMinutes > 0) {
                                             if ($overtimeMinutes > 240) {
@@ -399,8 +401,9 @@ class TimesheetRepository extends Repository
                     if ($t && $t->status !== 'ABSENT') {
                         $dailyOt = 0.0;
                         if ($t->check_in && $t->check_out) {
-                            $checkInCarbon = \Carbon\Carbon::parse($t->check_in);
-                            $checkOutCarbon = \Carbon\Carbon::parse($t->check_out);
+                            $tz = $t->timezone ?: 'Asia/Ho_Chi_Minh';
+                            $checkInCarbon = \Carbon\Carbon::parse($t->check_in)->setTimezone($tz);
+                            $checkOutCarbon = \Carbon\Carbon::parse($t->check_out)->setTimezone($tz);
                             $overtimeMinutes = $checkInCarbon->diffInMinutes($checkOutCarbon, false);
                             if ($overtimeMinutes > 0) {
                                 if ($overtimeMinutes > 240) {
